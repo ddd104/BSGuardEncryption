@@ -3,7 +3,7 @@
 	"Version": 1,
 	"VersionName": "1.0",
 	"FriendlyName": "BSGuardEncryption",
-	"Description": "",
+	"Description": "A plugin that provides encryption for asset files",
 	"Category": "Other",
 	"CreatedBy": "BigStar",
 	"CreatedByURL": "",
@@ -18,6 +18,16 @@
 		{
 			"Name": "BSGuardCore",
 			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		},
+		{
+			"Name": "BSGuardEditor",
+			"Type": "Editor",
+			"LoadingPhase": "Default"
+		},
+		{
+			"Name": "BSGuardCmdlet",
+			"Type": "Developer",
 			"LoadingPhase": "Default"
 		}
 	]

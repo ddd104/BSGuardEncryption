@@ -4,14 +4,11 @@
 
 #include "Modules/ModuleManager.h"
 
-class FBSGuardCoreModule : public IModuleInterface
+class FBSGuardCmdletModule : public IModuleInterface
 {
 public:
 
 	/** IModuleInterface implementation */
 	virtual void StartupModule() override;
 	virtual void ShutdownModule() override;
-private:
-	IPlatformFile* OriginalPlatformFile = nullptr;
-	TUniquePtr<class FBSGuardPlatformFile> GuardPlatformFile;
 };
