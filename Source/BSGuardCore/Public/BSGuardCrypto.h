@@ -5,10 +5,12 @@ class BSGUARDCORE_API FBSGuardCrypto
 {
 public:
 	// 设置AES对称密钥（32字节）。通常从UGuardSettings验证后调用。
-	static void SetKey(const TArray<uint8>& InKey);
+        static void SetKey(const TArray<uint8>& InKey, const FString& InUserId);
 
 	// 检查当前是否有有效密钥
-	static bool HasValidKey();
+        static bool HasValidKey();
+
+        static const FString& GetCurrentUserId();
 
 	// 判断文件是否是加密的资产文件（通过魔数头判断）
 	static bool IsEncryptedAssetFile(const FString& FilePath);
@@ -22,10 +24,14 @@ public:
 
 	// AES-GCM 加解密实现
 	static bool Encrypt(const TArray<uint8>& PlainData, TArray<uint8>& OutEncryptedData, TArray<uint8>& OutIV, TArray<uint8>& OutAuthTag);
-	static bool Decrypt(const TArray<uint8>& EncryptedData, const TArray<uint8>& IV, const TArray<uint8>& AuthTag, TArray<uint8>& OutPlainData);
+        static bool Decrypt(const TArray<uint8>& EncryptedData, const TArray<uint8>& IV, const TArray<uint8>& AuthTag, TArray<uint8>& OutPlainData);
 
-	static bool GenRandomBytes(uint8* Out, int32 Num);
-	// 当前使用的对称密钥和有效性
-	static uint8 Key[32];
-	static bool bKeyIsSet;
+        static bool EncryptWithKey(const TArray<uint8>& PlainData, const uint8* InKey, TArray<uint8>& OutEncryptedData, TArray<uint8>& OutIV, TArray<uint8>& OutAuthTag);
+        static bool DecryptWithKey(const TArray<uint8>& EncryptedData, const uint8* InKey, const TArray<uint8>& IV, const TArray<uint8>& AuthTag, TArray<uint8>& OutPlainData);
+
+        static bool GenRandomBytes(uint8* Out, int32 Num);
+        // 当前使用的对称密钥和有效性
+        static uint8 Key[32];
+        static bool bKeyIsSet;
+        static FString CurrentUserId;
 };

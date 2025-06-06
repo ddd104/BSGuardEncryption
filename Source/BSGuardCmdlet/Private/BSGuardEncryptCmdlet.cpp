@@ -24,7 +24,7 @@ int32 UBSGuardEncryptCmdlet::Main(const FString& Params)
 		UE_LOG(LogTemp, Error, TEXT("No valid encryption key provided. Use -Key=<Base64Key> in Params."));
 		return -1;
 	}
-	FBSGuardCrypto::SetKey(Settings->GetKeyBytes());
+        FBSGuardCrypto::SetKey(Settings->GetKeyBytes(), Settings->GetUserId());
 
 	// 确定扫描路径，默认为项目Content目录
 	FString TargetPath = FPaths::ProjectContentDir();

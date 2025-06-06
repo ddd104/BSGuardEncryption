@@ -1,22 +1,56 @@
 ﻿#include "BSGuardFileHandleWrite.h"
 #include "BSGuardCrypto.h"
+#include "Containers/StringConv.h"
 
 FBSGuardPlatformFile::FBSGuardFileHandleWrite::FBSGuardFileHandleWrite(IFileHandle* InHandle): InnerHandle(InHandle)
 {
-	bError = false;
-	// 生成随机IV并写入文件头 (Magic + IV 占 4+12 字节)
-	InnerHandle->Write(BSGE::CryptoMagic, 4);
-	IV.SetNumUninitialized(12);
-	FBSGuardCrypto::GenRandomBytes(IV.GetData(), IV.Num());
-	InnerHandle->Write(IV.GetData(), IV.Num());
-	// 初始化OpenSSL加密CTX
-	Ctx = EVP_CIPHER_CTX_new();
-	const EVP_CIPHER* Cipher = EVP_aes_256_gcm();
-	if (!Ctx || EVP_EncryptInit_ex(Ctx, Cipher, NULL, FBSGuardCrypto::Key, IV.GetData()) != 1)
-	{
-		bError = true;
-		UE_LOG(LogTemp, Error, TEXT("Failed to initialize AES-GCM context for writing."));
-	}
+        bError = false;
+        // 文件头: Magic + Version + EntryCount + [Entry] + DataIV
+        InnerHandle->Write(BSGE::CryptoMagic, 4);
+        uint8 Version = 0x02;
+        InnerHandle->Write(&Version, 1);
+        uint8 EntryCount = 1;
+        InnerHandle->Write(&EntryCount, 1);
+
+        // 生成数据密钥和IV
+        DataKey.SetNumUninitialized(32);
+        FBSGuardCrypto::GenRandomBytes(DataKey.GetData(), DataKey.Num());
+        DataIV.SetNumUninitialized(12);
+        FBSGuardCrypto::GenRandomBytes(DataIV.GetData(), DataIV.Num());
+
+        // 准备用户ID
+        FTCHARToUTF8 UserIdUtf8(*FBSGuardCrypto::GetCurrentUserId());
+        uint8 UserIdLen = FMath::Min<int32>(UserIdUtf8.Length(), 255);
+        InnerHandle->Write(&UserIdLen, 1);
+        InnerHandle->Write((const uint8*)UserIdUtf8.Get(), UserIdLen);
+
+        int64 Expiry = 0; // 暂未存储过期时间
+        InnerHandle->Write(reinterpret_cast<uint8*>(&Expiry), sizeof(int64));
+
+        // 使用用户密钥加密数据密钥
+        TArray<uint8> EncDEK;
+        EncDEK.Reserve(32);
+        KeyIV.SetNumUninitialized(12);
+        TArray<uint8> KeyTag;
+        if (!FBSGuardCrypto::Encrypt(DataKey, EncDEK, KeyIV, KeyTag))
+        {
+                bError = true;
+        }
+        InnerHandle->Write(KeyIV.GetData(), KeyIV.Num());
+        InnerHandle->Write(EncDEK.GetData(), EncDEK.Num());
+        InnerHandle->Write(KeyTag.GetData(), KeyTag.Num());
+
+        // 写入数据IV供后续解密
+        InnerHandle->Write(DataIV.GetData(), DataIV.Num());
+
+        // 初始化OpenSSL加密CTX使用数据密钥
+        Ctx = EVP_CIPHER_CTX_new();
+        const EVP_CIPHER* Cipher = EVP_aes_256_gcm();
+        if (!Ctx || EVP_EncryptInit_ex(Ctx, Cipher, NULL, DataKey.GetData(), DataIV.GetData()) != 1)
+        {
+                bError = true;
+                UE_LOG(LogTemp, Error, TEXT("Failed to initialize AES-GCM context for writing."));
+        }
 }
 
 FBSGuardPlatformFile::FBSGuardFileHandleWrite::~FBSGuardFileHandleWrite()

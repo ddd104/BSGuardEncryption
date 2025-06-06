@@ -4,6 +4,7 @@
 #include "ContentBrowserModule.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
 #include "BSGuardCrypto.h"
+#include "BSCommonDefinition.h"
 #include "IContentBrowserSingleton.h"
 #include "AssetRegistry/AssetData.h"
 #include "Interfaces/IPluginManager.h"
@@ -14,6 +15,7 @@
 
 
 #define LOCTEXT_NAMESPACE "FBSGuardEditorModule"
+DEFINE_LOG_CATEGORY(LogBSGEEd);
 
 void FBSGuardEditorModule::StartupModule()
 {

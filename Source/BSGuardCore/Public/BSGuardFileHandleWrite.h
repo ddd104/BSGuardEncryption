@@ -33,7 +33,9 @@ public:
 private:
     IFileHandle* InnerHandle;
     EVP_CIPHER_CTX* Ctx;
-    TArray<uint8> IV;
+    TArray<uint8> DataIV;
+    TArray<uint8> DataKey;
+    TArray<uint8> KeyIV;
     TArray<uint8> EncryptedBuffer;
     bool bError;
 };

@@ -5,6 +5,9 @@
 #include "BSGuardCrypto.h"
 #include "BSGuardPlatformFile.h"
 #include "BSGuardSettings.h"
+#include "BSCommonDefinition.h"
+
+DEFINE_LOG_CATEGORY(LogBSGE);
 
 #define LOCTEXT_NAMESPACE "FBSGuardCoreModule"
 
@@ -13,11 +16,11 @@ void FBSGuardCoreModule::StartupModule()
 	UBSGuardSettings* Settings = GetMutableDefault<UBSGuardSettings>();
 	if (Settings)
 	{
-		if (Settings->ValidateAndSetKey())
-		{
-			// 将验证后的密钥字节设置给加密模块
-			FBSGuardCrypto::SetKey(Settings->GetKeyBytes());
-		}
+                if (Settings->ValidateAndSetKey())
+                {
+                        // 将验证后的密钥字节设置给加密模块
+                        FBSGuardCrypto::SetKey(Settings->GetKeyBytes(), Settings->GetUserId());
+                }
 		else
 		{
 			UE_LOG(LogTemp, Warning, TEXT("GuardEncryption: No valid key provided. Encryption will remain disabled."));

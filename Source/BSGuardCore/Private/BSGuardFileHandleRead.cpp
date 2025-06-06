@@ -2,6 +2,7 @@
 
 #include "BSCommonDefinition.h"
 #include "BSGuardCrypto.h"
+#include "Containers/StringConv.h"
 
 FBSGuardPlatformFile::FBSGuardFileHandleRead::FBSGuardFileHandleRead(IFileHandle* InHandle):InnerHandle(InHandle)
 {
@@ -11,29 +12,57 @@ FBSGuardPlatformFile::FBSGuardFileHandleRead::FBSGuardFileHandleRead(IFileHandle
 	EncryptedData.SetNumUninitialized(TotalSize);
 	InnerHandle->Seek(0);
 	InnerHandle->Read(EncryptedData.GetData(), TotalSize);
-	// 解析头、IV、Tag并进行解密
-	if (EncryptedData.Num() >= 4 && FMemory::Memcmp(EncryptedData.GetData(), BSGE::CryptoMagic, 4) == 0)
-	{
-		// 提取IV、Tag、密文
-		const int32 HeaderSize = 4 + 12;
-		const int32 TagSize = 16;
-		if (EncryptedData.Num() >= HeaderSize + TagSize)
-		{
-			TArray<uint8> IV;
-			IV.Append(EncryptedData.GetData() + 4, 12);
-			TArray<uint8> AuthTag;
-			AuthTag.Append(EncryptedData.GetData() + EncryptedData.Num() - TagSize, TagSize);
-			int32 CipherSize = EncryptedData.Num() - HeaderSize - TagSize;
-			if (CipherSize < 0) CipherSize = 0;
-			TArray<uint8> CipherData;
-			CipherData.Append(EncryptedData.GetData() + HeaderSize, CipherSize);
-			TArray<uint8> PlainData;
-			if (FBSGuardCrypto::HasValidKey() && FBSGuardCrypto::Decrypt(CipherData, IV, AuthTag, PlainData))
-			{
-				DecryptedData = MoveTemp(PlainData);
-			}
-		}
-	}
+        // 解析头、IV、Tag并进行解密
+        if (EncryptedData.Num() > 0 && FMemory::Memcmp(EncryptedData.GetData(), BSGE::CryptoMagic, 4) == 0)
+        {
+                int32 Offset = 4;
+                uint8 Version = EncryptedData.IsValidIndex(Offset) ? EncryptedData[Offset++] : 0;
+                if (Version == 0x02)
+                {
+                        uint8 EntryCount = EncryptedData[Offset++];
+                        TArray<uint8> DataKey;
+                        bool bGotKey = false;
+                        for (uint8 i = 0; i < EntryCount; ++i)
+                        {
+                                uint8 IdLen = EncryptedData[Offset++];
+                                FUTF8ToTCHAR Conv(reinterpret_cast<const ANSICHAR*>(EncryptedData.GetData()+Offset), IdLen);
+                                FString Id(Conv.Get(), Conv.Length());
+                                Offset += IdLen;
+                                int64 Expiry = 0;
+                                FMemory::Memcpy(&Expiry, EncryptedData.GetData()+Offset, sizeof(int64));
+                                Offset += sizeof(int64);
+                                TArray<uint8> KeyIV;
+                                KeyIV.Append(EncryptedData.GetData()+Offset, 12); Offset+=12;
+                                TArray<uint8> EncDEK;
+                                EncDEK.Append(EncryptedData.GetData()+Offset, 32); Offset+=32;
+                                TArray<uint8> KeyTag;
+                                KeyTag.Append(EncryptedData.GetData()+Offset, 16); Offset+=16;
+                                if (!bGotKey && FBSGuardCrypto::HasValidKey() && Id == FBSGuardCrypto::GetCurrentUserId())
+                                {
+                                        if (FBSGuardCrypto::Decrypt(EncDEK, KeyIV, KeyTag, DataKey))
+                                        {
+                                                bGotKey = true;
+                                        }
+                                }
+                        }
+                        if (bGotKey)
+                        {
+                                TArray<uint8> DataIV;
+                                DataIV.Append(EncryptedData.GetData()+Offset, 12); Offset += 12;
+                                const int32 TagSize = 16;
+                                int32 CipherSize = EncryptedData.Num() - Offset - TagSize;
+                                if (CipherSize < 0) CipherSize = 0;
+                                TArray<uint8> CipherData;
+                                CipherData.Append(EncryptedData.GetData()+Offset, CipherSize);
+                                TArray<uint8> DataTag;
+                                DataTag.Append(EncryptedData.GetData()+Offset+CipherSize, TagSize);
+                                if (FBSGuardCrypto::Decrypt(CipherData, DataIV, DataTag, DecryptedData))
+                                {
+                                        // success
+                                }
+                        }
+                }
+        }
 	// 清理底层资源（无需再用）
 	delete InnerHandle;
 	InnerHandle = nullptr;
