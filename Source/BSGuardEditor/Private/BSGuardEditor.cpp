@@ -66,7 +66,7 @@ TSharedRef<FExtender> FBSGuardEditorModule::OnExtendContentBrowserAssetMenu(cons
 	if (SelectedAssets.Num() == 1)
 	{
 		Extender->AddMenuExtension(
-			"AssetContextAdvancedActions", // 在高级操作区之后插入
+			"CommonAssetActions", // 在高级操作区之后插入
 			EExtensionHook::After,
 			nullptr,
 			FMenuExtensionDelegate::CreateStatic(&FBSGuardEditorModule::CreateAssetContextMenu, SelectedAssets)
@@ -77,7 +77,7 @@ TSharedRef<FExtender> FBSGuardEditorModule::OnExtendContentBrowserAssetMenu(cons
 
 void FBSGuardEditorModule::CreateAssetContextMenu(FMenuBuilder& MenuBuilder, const TArray<FAssetData> SelectedAssets)
 {
-	if (SelectedAssets.Num() != 1) return;
+	if (SelectedAssets.Num() == 0) return;
 	const FAssetData& AssetData = SelectedAssets[0];
 	FString AssetFilePath = AssetData.PackageName.ToString();
 	AssetFilePath = FPackageName::LongPackageNameToFilename(AssetFilePath, FPackageName::GetAssetPackageExtension());  // 转换为.uasset文件路径

@@ -14,9 +14,13 @@ class BSGUARDCORE_API UBSGuardSettings : public UObject
 {
 	GENERATED_BODY()
 public:
-	// 用户在编辑器中输入的密钥字符串（不保存到硬盘，Transient避免序列化）
-	UPROPERTY(EditAnywhere, Category="GuardEncryption", meta=(DisplayName="Encryption Key"), Transient)
+	// 用户在编辑器中输入的密钥字符串（旧方式）或选择的License文件路径
+	UPROPERTY(EditAnywhere, Category="GuardEncryption", meta=(DisplayName="Encryption Key or License"), Transient)
 	FString UserKeyInput;
+
+	// 新增：License文件路径，可在项目设置中选择
+	UPROPERTY(EditAnywhere, Category="GuardEncryption", meta=(DisplayName="License File"))
+	FString LicenseFilePath;
 
 	// 密钥过期时间（例如GMT字符串或时间戳），可选由插件提供，只读显示
 	UPROPERTY(EditAnywhere, Category="GuardEncryption", meta=(DisplayName="Key Expiration"), Transient)

@@ -2,6 +2,8 @@
 
 
 #include "BSGuardSettings.h"
+
+#include "BSLicenseUtils..h"
 #include "Misc/DateTime.h"
 #include "Misc/Timespan.h"
 #include "Misc/Base64.h"
@@ -16,6 +18,48 @@ bool UBSGuardSettings::ValidateAndSetKey()
 		UE_LOG(LogTemp, Warning, TEXT("Encryption key is empty."));
 		return false;
 	}
+
+	// 优先尝试从License文件加载密钥
+	if (!LicenseFilePath.IsEmpty())
+	{
+		FBSLicenseData LicData;
+		if (FBSLicenseUtils::LoadLicense(LicenseFilePath, LicData))
+		{
+			if (!FBase64::Decode(LicData.SharedKey, KeyBytes) || KeyBytes.Num() != 32)
+			{
+				UE_LOG(LogTemp, Error, TEXT("Invalid SharedKey in license"));
+				return false;
+			}
+			if (!LicData.ExpireDate.IsEmpty())
+			{
+				FDateTime ExpiryTime;
+				if (FDateTime::ParseIso8601(*LicData.ExpireDate, ExpiryTime))
+				{
+					if (FDateTime::UtcNow() > ExpiryTime)
+					{
+						UE_LOG(LogTemp, Error, TEXT("License expired on %s."), *LicData.ExpireDate);
+						return false;
+					}
+					KeyExpiration = LicData.ExpireDate;
+				}
+			}
+			bKeyIsValid = true;
+			UE_LOG(LogTemp, Display, TEXT("License validated successfully."));
+			return true;
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("Failed to load license file: %s"), *LicenseFilePath);
+			// fall through to legacy key input
+		}
+	}
+
+	if (UserKeyInput.IsEmpty())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Encryption key is empty."));
+		return false;
+	}
+	
 	// 假设密钥格式: Base64编码的32字节密钥 + 可选的到期时间（例如追加在后面）。
 	FString EncodedKey = UserKeyInput;
 	FString ExpirationPart;
