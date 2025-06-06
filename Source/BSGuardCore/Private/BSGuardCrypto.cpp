@@ -25,10 +25,22 @@ bool FBSGuardCrypto::HasValidKey()
 
 bool FBSGuardCrypto::IsEncryptedAssetFile(const FString& FilePath)
 {
+    FString AbsolutePath = FilePath;
+    if (FPaths::IsRelative(FilePath))
+    {
+        AbsolutePath = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir(), FilePath);
+    }
+
+    if (!FPaths::FileExists(AbsolutePath))
+    {
+        UE_LOG(LogTemp, Warning, TEXT("[IsEncryptedAssetFile] 文件不存在：%s"), *AbsolutePath);
+        return false;
+    }
+    
     // 读取文件头4字节检查魔数
     uint8 Header[4] = {0};
     IPlatformFile& PlatFile = FPlatformFileManager::Get().GetPlatformFile();
-    TUniquePtr<IFileHandle> FileHandle(PlatFile.OpenRead(*FilePath));
+    TUniquePtr<IFileHandle> FileHandle(PlatFile.OpenRead(*AbsolutePath));
     if (!FileHandle)
     {
         return false;

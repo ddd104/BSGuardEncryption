@@ -17,7 +17,7 @@
 
 void FBSGuardEditorModule::StartupModule()
 {
-	FString ContentDir = IPluginManager::Get().FindPlugin(TEXT("GuardEncryption"))->GetBaseDir() / TEXT("Resources");
+	FString ContentDir = IPluginManager::Get().FindPlugin(TEXT("BSGuardEncryption"))->GetBaseDir() / TEXT("Resources");
 	FSlateStyleSet* StyleSet = new FSlateStyleSet("GuardEncryptionStyle");
 	StyleSet->SetContentRoot(ContentDir);
 	StyleSet->Set("GuardEncryption.LockIcon16", new FSlateImageBrush(StyleSet->RootToContentDir(TEXT("LockIcon16.png")), FVector2D(16,16)));
