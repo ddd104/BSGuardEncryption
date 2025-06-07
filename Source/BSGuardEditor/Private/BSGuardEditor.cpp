@@ -92,8 +92,10 @@ void FBSGuardEditorModule::CreateAssetContextMenu(FMenuBuilder& MenuBuilder, con
 			LOCTEXT("DecryptAssetTooltip", "使用当前密钥解密此资产文件"),
 			FSlateIcon(FAppStyle::GetAppStyleSetName(), "Icons.Unlock"),  // 假设使用一个解锁图标
 			FUIAction(
-				FExecuteAction::CreateStatic(TIdentity<TDelegate<void()>::RetValType(*)(std::decay_t<const FAssetData&>)>::Type(
-					                             &FBSGuardEditorModule::DecryptSelectedAsset), AssetData),
+								FExecuteAction::CreateLambda([AssetData]()
+				{
+					FBSGuardEditorModule::DecryptSelectedAsset(AssetData);
+				}),
 				FCanExecuteAction::CreateLambda([AssetFilePath]()
 				{
 					// 仅当密钥有效时允许解密
@@ -113,12 +115,14 @@ void FBSGuardEditorModule::CreateAssetContextMenu(FMenuBuilder& MenuBuilder, con
 			LOCTEXT("EncryptAssetTooltip", "使用当前密钥加密此资产文件"),
 			FSlateIcon(FAppStyle::GetAppStyleSetName(), "Icons.Lock"),  // 假设使用一个锁图标
 			FUIAction(
-				FExecuteAction::CreateStatic(TIdentity<TDelegate<void()>::RetValType(*)(std::decay_t<const FAssetData&>)>::Type(
-					                             &FBSGuardEditorModule::EncryptSelectedAsset), AssetData),
+				FExecuteAction::CreateLambda([AssetData]()
+				{
+						FBSGuardEditorModule::EncryptSelectedAsset(AssetData);
+				}),
 				FCanExecuteAction::CreateLambda([AssetFilePath]()
 				{
-					// 需要有有效密钥，且文件未加密
-					return FBSGuardCrypto::HasValidKey() && !FBSGuardCrypto::IsEncryptedAssetFile(AssetFilePath);
+						// 需要有有效密钥，且文件未加密
+						return FBSGuardCrypto::HasValidKey() && !FBSGuardCrypto::IsEncryptedAssetFile(AssetFilePath);
 				})
 			)
 		);
