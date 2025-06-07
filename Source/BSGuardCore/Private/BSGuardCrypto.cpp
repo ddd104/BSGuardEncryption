@@ -52,8 +52,7 @@ bool FBSGuardCrypto::IsEncryptedAssetFile(const FString& FilePath)
     }
     if (FileHandle->Read(Header, sizeof(Header)))
     {
-        bool ret = FMemory::Memcmp(Header, BSGE::CryptoMagic, 4) != 0;
-        return ret;
+        return FMemory::Memcmp(Header, BSGE::CryptoMagic, 4) == 0;
     }
     return false;
 }

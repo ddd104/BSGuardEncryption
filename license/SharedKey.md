@@ -3,13 +3,13 @@
 
 
 # 生成私钥（PEM）
-openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out NTAG_root_private.pem
+openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out root_private.pem
 
 # 导出公钥（PEM）——拷贝到插件源码 GRootPubKeyPem 处
-openssl rsa -in NTAG_root_private.pem -pubout -out  NTAG_root_public.pem
+openssl rsa -in root_private.pem -pubout -out  root_public.pem
 
 # 生成 License
-python ntag_sign.py TeamA 2026-01-01 2a307a821dcd790fd9fc7cd11000427420b36e9cc85b01a989a93a70bf63124a NTAG_root_private.pem  > License.json
+python ntag_sign.py TeamA 2026-01-01 2a307a821dcd790fd9fc7cd11000427420b36e9cc85b01a989a93a70bf63124a root_private.pem  > License.license
 
 
 

@@ -115,6 +115,7 @@ IFileHandle* FBSGuardPlatformFile::OpenRead(const TCHAR* Filename, bool bAllowWr
 	bool bIsAssetFile = FilePath.EndsWith(TEXT(".uasset")) || FilePath.EndsWith(TEXT(".uexp")) || FilePath.EndsWith(TEXT(".ubulk"));
 	if (bIsAssetFile)
 	{
+		UE_LOG(LogTemp, Log, TEXT("123"));
 		if (FBSGuardCrypto::IsEncryptedAssetFile(FilePath))
 		{
 			// 文件是加密的资产

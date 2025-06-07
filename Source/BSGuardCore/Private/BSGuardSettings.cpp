@@ -2,23 +2,27 @@
 
 
 #include "BSGuardSettings.h"
-
 #include "BSLicenseUtils..h"
+#include "Interfaces/IPluginManager.h"
 #include "Misc/DateTime.h"
 #include "Misc/Timespan.h"
 #include "Misc/Base64.h"
+
+static FString GetLicenseFilePath()
+{
+	TSharedPtr<IPlugin> Plugin = IPluginManager::Get().FindPlugin(TEXT("BSGuardEncryption"));
+	if (!Plugin.IsValid())
+	{
+		return FString();
+	}
+	return  FPaths::Combine(Plugin->GetBaseDir(), TEXT("license"), TEXT("License.license"));
+}
 
 bool UBSGuardSettings::ValidateAndSetKey()
 {
 	bKeyIsValid = false;
 	KeyBytes.Empty();
-
-	if (UserKeyInput.IsEmpty())
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Encryption key is empty."));
-		return false;
-	}
-
+	LicenseFilePath = GetLicenseFilePath();
 	// 优先尝试从License文件加载密钥
 	if (!LicenseFilePath.IsEmpty())
 	{
@@ -50,9 +54,10 @@ bool UBSGuardSettings::ValidateAndSetKey()
 		else
 		{
 			UE_LOG(LogTemp, Error, TEXT("Failed to load license file: %s"), *LicenseFilePath);
-			// fall through to legacy key input
+			// fall back to manual key string if provided
 		}
 	}
+
 
 	if (UserKeyInput.IsEmpty())
 	{

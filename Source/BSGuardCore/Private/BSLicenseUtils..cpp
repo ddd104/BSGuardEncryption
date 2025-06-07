@@ -1,7 +1,9 @@
 ﻿#include "BSLicenseUtils..h"
 #include "BSCommonDefinition.h"
 #include "Interfaces/IPluginManager.h"
-
+#include "Serialization/MemoryReader.h"
+#include "Misc/FileHelper.h"
+#include "Misc/Base64.h"
 
 static FString GetPublicKeyPem()
 {
@@ -17,7 +19,7 @@ static FString GetPublicKeyPem()
 }
 
 #if WITH_OPENSSL
-static bool VerifySignatureOpenSSL(const FString& Data, const TArray<uint8>& SigBytes)
+static bool VerifySignatureOpenSSL(const TArray<uint8>& Data, const TArray<uint8>& SigBytes)
 {
 	FString Pem = GetPublicKeyPem();
 	if (Pem.IsEmpty()) return false;
@@ -35,8 +37,7 @@ static bool VerifySignatureOpenSSL(const FString& Data, const TArray<uint8>& Sig
 	bool bResult = false;
 	if (EVP_DigestVerifyInit(Ctx, NULL, EVP_sha256(), NULL, PKey) == 1)
 	{
-		FTCHARToUTF8 Converter(*Data);
-		if (EVP_DigestVerifyUpdate(Ctx, Converter.Get(), Converter.Length()) == 1)
+		if (EVP_DigestVerifyUpdate(Ctx, Data.GetData(), Data.Num()) == 1)
 		{
 			bResult = (EVP_DigestVerifyFinal(Ctx, SigBytes.GetData(), SigBytes.Num()) == 1);
 		}
@@ -49,42 +50,58 @@ static bool VerifySignatureOpenSSL(const FString& Data, const TArray<uint8>& Sig
 
 bool FBSLicenseUtils::LoadLicense(const FString& FilePath, FBSLicenseData& OutData)
 {
-	FString JsonText;
-	if (!FFileHelper::LoadFileToString(JsonText, *FilePath))
+	TArray<uint8> Bytes;
+	if (!FFileHelper::LoadFileToArray(Bytes, *FilePath))
 	{
 		UE_LOG(LogTemp, Error, TEXT("Failed to read license file: %s"), *FilePath);
 		return false;
 	}
 
-	TSharedPtr<FJsonObject> JsonObj;
-	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(JsonText);
-	if (!FJsonSerializer::Deserialize(Reader, JsonObj) || !JsonObj.IsValid())
+
+	FMemoryReader Ar(Bytes, true);
+	ANSICHAR Magic[5] = {0};
+	Ar.Serialize(Magic, 4);
+	if (FCStringAnsi::Strncmp(Magic, "BSL1", 4) != 0)
 	{
-		UE_LOG(LogTemp, Error, TEXT("License JSON parse failed: %s"), *FilePath);
+		UE_LOG(LogTemp, Error, TEXT("Invalid license magic"));
 		return false;
 	}
 
-	FString Signature;
-	if (!JsonObj->TryGetStringField(TEXT("Signature"), Signature))
-	{
-		UE_LOG(LogTemp, Error, TEXT("License missing Signature field"));
-		return false;
-	}
-	JsonObj->RemoveField(TEXT("Signature"));
+	uint32 UserLen = 0;
+	Ar << UserLen;
+	TArray<char> UserBuf;
+	UserBuf.SetNum(UserLen);
+	Ar.Serialize(UserBuf.GetData(), UserLen);
+	FString User = UTF8_TO_TCHAR(UserBuf.GetData());
 
-	FString Canonical;
-	TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&Canonical);
-	FJsonSerializer::Serialize(JsonObj.ToSharedRef(), Writer);
+	uint32 AssetLen = 0;
+	Ar << AssetLen;
+	TArray<char> AssetBuf;
+	AssetBuf.SetNum(AssetLen);
+	Ar.Serialize(AssetBuf.GetData(), AssetLen);
+	FString Asset = UTF8_TO_TCHAR(AssetBuf.GetData());
 
+	int64 ExpireUnix = 0;
+	Ar << ExpireUnix;
+
+	uint32 KeyLen = 0;
+	Ar << KeyLen;
+	TArray<uint8> KeyBytes;
+	KeyBytes.SetNum(KeyLen);
+	Ar.Serialize(KeyBytes.GetData(), KeyLen);
+
+	uint32 SigLen = 0;
+	Ar << SigLen;
 	TArray<uint8> SigBytes;
-	if (!FBase64::Decode(Signature, SigBytes))
-	{
-		UE_LOG(LogTemp, Error, TEXT("Failed to decode license signature"));
-		return false;
-	}
+	SigBytes.SetNum(SigLen);
+	Ar.Serialize(SigBytes.GetData(), SigLen);
+
+	int32 DataLen = Bytes.Num() - SigLen - sizeof(uint32);
+	TArray<uint8> DataToVerify;
+	DataToVerify.Append(Bytes.GetData(), DataLen);
 
 #if WITH_OPENSSL
-	if (!VerifySignatureOpenSSL(Canonical, SigBytes))
+	if (!VerifySignatureOpenSSL(DataToVerify, SigBytes))
 	{
 		UE_LOG(LogTemp, Error, TEXT("License signature verification failed"));
 		return false;
@@ -93,9 +110,9 @@ bool FBSLicenseUtils::LoadLicense(const FString& FilePath, FBSLicenseData& OutDa
 	UE_LOG(LogTemp, Warning, TEXT("OpenSSL not available, skipping signature check"));
 #endif
 
-	JsonObj->TryGetStringField(TEXT("AssetPack"), OutData.AssetPack);
-	JsonObj->TryGetStringField(TEXT("User"), OutData.User);
-	JsonObj->TryGetStringField(TEXT("ExpireDate"), OutData.ExpireDate);
-	JsonObj->TryGetStringField(TEXT("SharedKey"), OutData.SharedKey);
+	OutData.User = User;
+	OutData.AssetPack = Asset;
+	OutData.ExpireDate = FDateTime::FromUnixTimestamp(ExpireUnix).ToIso8601();
+	OutData.SharedKey = FBase64::Encode(KeyBytes);
 	return true;
 }

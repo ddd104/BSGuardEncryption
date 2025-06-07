@@ -92,7 +92,7 @@ void FBSGuardEditorModule::CreateAssetContextMenu(FMenuBuilder& MenuBuilder, con
 			LOCTEXT("DecryptAssetTooltip", "使用当前密钥解密此资产文件"),
 			FSlateIcon(FAppStyle::GetAppStyleSetName(), "Icons.Unlock"),  // 假设使用一个解锁图标
 			FUIAction(
-								FExecuteAction::CreateLambda([AssetData]()
+				FExecuteAction::CreateLambda([AssetData]()
 				{
 					FBSGuardEditorModule::DecryptSelectedAsset(AssetData);
 				}),

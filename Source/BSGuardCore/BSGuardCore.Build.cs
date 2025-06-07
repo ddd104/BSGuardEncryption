@@ -32,8 +32,6 @@ public class BSGuardCore : ModuleRules
 			{
 				"CoreUObject",
 				"Engine",
-				"Json",
-				"JsonUtilities",
 				"Projects",
 				// ... add private dependencies that you statically link with here ...	
 			}

@@ -14,8 +14,8 @@ class BSGUARDCORE_API UBSGuardSettings : public UObject
 {
 	GENERATED_BODY()
 public:
-	// 用户在编辑器中输入的密钥字符串（旧方式）或选择的License文件路径
-	UPROPERTY(EditAnywhere, Category="GuardEncryption", meta=(DisplayName="Encryption Key or License"), Transient)
+	// 可选：直接输入密钥字符串；若留空则会使用下方的 License 文件
+	UPROPERTY(EditAnywhere, Category="GuardEncryption", meta=(DisplayName="Encryption Key"), Transient)
 	FString UserKeyInput;
 
 	// 新增：License文件路径，可在项目设置中选择
