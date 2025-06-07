@@ -87,20 +87,22 @@ void FBSGuardEditorModule::CreateAssetContextMenu(FMenuBuilder& MenuBuilder, con
 	if (bIsEncrypted)
 	{
 		// **解密** 菜单项
-		MenuBuilder.AddMenuEntry(
-			LOCTEXT("DecryptAssetLabel", "解密资产"),
-			LOCTEXT("DecryptAssetTooltip", "使用当前密钥解密此资产文件"),
-			FSlateIcon(FAppStyle::GetAppStyleSetName(), "Icons.Unlock"),  // 假设使用一个解锁图标
-			FUIAction(
-				FExecuteAction::CreateStatic(TIdentity<TDelegate<void()>::RetValType(*)(std::decay_t<const FAssetData&>)>::Type(
-					                             &FBSGuardEditorModule::DecryptSelectedAsset), AssetData),
-				FCanExecuteAction::CreateLambda([AssetFilePath]()
-				{
-					// 仅当密钥有效时允许解密
-					return FBSGuardCrypto::HasValidKey();
-				})
-			)
-		);
+                MenuBuilder.AddMenuEntry(
+                        LOCTEXT("DecryptAssetLabel", "解密资产"),
+                        LOCTEXT("DecryptAssetTooltip", "使用当前密钥解密此资产文件"),
+                        FSlateIcon(FAppStyle::GetAppStyleSetName(), "Icons.Unlock"),  // 假设使用一个解锁图标
+                        FUIAction(
+                                FExecuteAction::CreateLambda([AssetData]()
+                                {
+                                        FBSGuardEditorModule::DecryptSelectedAsset(AssetData);
+                                }),
+                                FCanExecuteAction::CreateLambda([AssetFilePath]()
+                                {
+                                        // 仅当密钥有效时允许解密
+                                        return FBSGuardCrypto::HasValidKey();
+                                })
+                        )
+                );
 		// 如有需要，禁用导出等操作
 		// （例如可以在Extender添加前移除Export菜单，此处简化为注释）
 		// MenuBuilder.RemoveMenuEntry(FName("ExportAsset"));  // 假设可以通过名称移除
@@ -108,20 +110,22 @@ void FBSGuardEditorModule::CreateAssetContextMenu(FMenuBuilder& MenuBuilder, con
 	else
 	{
 		// **加密** 菜单项
-		MenuBuilder.AddMenuEntry(
-			LOCTEXT("EncryptAssetLabel", "加密资产"),
-			LOCTEXT("EncryptAssetTooltip", "使用当前密钥加密此资产文件"),
-			FSlateIcon(FAppStyle::GetAppStyleSetName(), "Icons.Lock"),  // 假设使用一个锁图标
-			FUIAction(
-				FExecuteAction::CreateStatic(TIdentity<TDelegate<void()>::RetValType(*)(std::decay_t<const FAssetData&>)>::Type(
-					                             &FBSGuardEditorModule::EncryptSelectedAsset), AssetData),
-				FCanExecuteAction::CreateLambda([AssetFilePath]()
-				{
-					// 需要有有效密钥，且文件未加密
-					return FBSGuardCrypto::HasValidKey() && !FBSGuardCrypto::IsEncryptedAssetFile(AssetFilePath);
-				})
-			)
-		);
+                MenuBuilder.AddMenuEntry(
+                        LOCTEXT("EncryptAssetLabel", "加密资产"),
+                        LOCTEXT("EncryptAssetTooltip", "使用当前密钥加密此资产文件"),
+                        FSlateIcon(FAppStyle::GetAppStyleSetName(), "Icons.Lock"),  // 假设使用一个锁图标
+                        FUIAction(
+                                FExecuteAction::CreateLambda([AssetData]()
+                                {
+                                        FBSGuardEditorModule::EncryptSelectedAsset(AssetData);
+                                }),
+                                FCanExecuteAction::CreateLambda([AssetFilePath]()
+                                {
+                                        // 需要有有效密钥，且文件未加密
+                                        return FBSGuardCrypto::HasValidKey() && !FBSGuardCrypto::IsEncryptedAssetFile(AssetFilePath);
+                                })
+                        )
+                );
 	}
 }
 

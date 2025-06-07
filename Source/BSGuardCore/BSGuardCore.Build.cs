@@ -27,14 +27,17 @@ public class BSGuardCore : ModuleRules
 			);
 			
 		
-		PrivateDependencyModuleNames.AddRange(
-			new string[]
-			{
-				"CoreUObject",
-				"Engine",
-				// ... add private dependencies that you statically link with here ...	
-			}
-			);
+                PrivateDependencyModuleNames.AddRange(
+                        new string[]
+                        {
+                                "CoreUObject",
+                                "Engine",
+                                "Json",
+                                "JsonUtilities",
+                                "Projects",
+                                // ... add private dependencies that you statically link with here ...
+                        }
+                        );
 		
 		if (Target.Platform == UnrealTargetPlatform.Win64 || Target.Platform == UnrealTargetPlatform.Linux || Target.Platform == UnrealTargetPlatform.Mac)
 		{

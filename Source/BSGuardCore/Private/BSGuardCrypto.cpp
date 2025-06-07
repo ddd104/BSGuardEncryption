@@ -39,8 +39,14 @@ bool FBSGuardCrypto::IsEncryptedAssetFile(const FString& FilePath)
     
     // 读取文件头4字节检查魔数
     uint8 Header[4] = {0};
+    // 避免递归调用自定义平台文件导致的死循环，直接使用底层平台文件
     IPlatformFile& PlatFile = FPlatformFileManager::Get().GetPlatformFile();
-    TUniquePtr<IFileHandle> FileHandle(PlatFile.OpenRead(*AbsolutePath));
+    IPlatformFile* RawFile = PlatFile.GetLowerLevel();
+    if (!RawFile)
+    {
+        RawFile = &PlatFile;
+    }
+    TUniquePtr<IFileHandle> FileHandle(RawFile->OpenRead(*AbsolutePath));
     if (!FileHandle)
     {
         return false;
