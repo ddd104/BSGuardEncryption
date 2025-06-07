@@ -158,9 +158,7 @@ void FBSGuardEditorModule::EncryptSelectedAsset(const FAssetData& AssetData)
 			FBSGuardCrypto::EncryptFile(UexpPath);
 		}
 		FString UbulkPath = FPaths::ChangeExtension(AssetFilePath, TEXT(".ubulk"));
-		if (IFileManager::
-
-		Get().FileExists(*UbulkPath))
+		if (IFileManager::Get().FileExists(*UbulkPath))
 		{
 			FBSGuardCrypto::EncryptFile(UbulkPath);
 		}

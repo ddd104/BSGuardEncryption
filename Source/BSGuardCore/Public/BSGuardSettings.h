@@ -14,10 +14,6 @@ class BSGUARDCORE_API UBSGuardSettings : public UObject
 {
 	GENERATED_BODY()
 public:
-	// 可选：直接输入密钥字符串；若留空则会使用下方的 License 文件
-	UPROPERTY(EditAnywhere, Category="GuardEncryption", meta=(DisplayName="Encryption Key"), Transient)
-	FString UserKeyInput;
-
 	// 新增：License文件路径，可在项目设置中选择
 	UPROPERTY(EditAnywhere, Category="GuardEncryption", meta=(DisplayName="License File"))
 	FString LicenseFilePath;
@@ -30,7 +26,7 @@ public:
 	bool ValidateAndSetKey();
     
 	// 获取内部使用的原始AES对称密钥字节（32字节），如果密钥有效
-	const TArray<uint8>& GetKeyBytes() const { return KeyBytes; }
+	const TArray<uint8>& GetKeyBytes() const;
 
 	// 检查密钥是否已验证通过且未过期
 	bool IsKeyValid() const { return bKeyIsValid; }

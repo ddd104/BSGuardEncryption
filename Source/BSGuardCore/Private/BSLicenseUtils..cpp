@@ -5,7 +5,7 @@
 #include "Misc/FileHelper.h"
 #include "Misc/Base64.h"
 
-static FString GetPublicKeyPem()
+FString FBSLicenseUtils::GetPublicKeyPem()
 {
 	TSharedPtr<IPlugin> Plugin = IPluginManager::Get().FindPlugin(TEXT("BSGuardEncryption"));
 	if (!Plugin.IsValid())
@@ -21,13 +21,23 @@ static FString GetPublicKeyPem()
 #if WITH_OPENSSL
 static bool VerifySignatureOpenSSL(const TArray<uint8>& Data, const TArray<uint8>& SigBytes)
 {
-	FString Pem = GetPublicKeyPem();
-	if (Pem.IsEmpty()) return false;
-	BIO* Bio = BIO_new_mem_buf((void*)TCHAR_TO_ANSI(*Pem), Pem.Len());
-	if (!Bio) return false;
+	FString Pem = FBSLicenseUtils::GetPublicKeyPem();
+	if (Pem.IsEmpty())
+	{
+		return false;
+	}
+	FTCHARToUTF8 PemUtf8(*Pem);
+	BIO* Bio = BIO_new_mem_buf((void*)PemUtf8.Get(), PemUtf8.Length());
+	if (!Bio)
+	{
+		return false;
+	}
 	EVP_PKEY* PKey = PEM_read_bio_PUBKEY(Bio, NULL, NULL, NULL);
 	BIO_free(Bio);
-	if (!PKey) return false;
+	if (!PKey)
+	{
+		return false;
+	}
 	EVP_MD_CTX* Ctx = EVP_MD_CTX_new();
 	if (!Ctx)
 	{

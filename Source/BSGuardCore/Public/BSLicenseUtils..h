@@ -14,4 +14,6 @@ class BSGUARDCORE_API FBSLicenseUtils
 public:
 	// Load license from file and verify signature. Returns true on success.
 	static bool LoadLicense(const FString& FilePath, FBSLicenseData& OutData);
+
+	static FString GetPublicKeyPem();
 };

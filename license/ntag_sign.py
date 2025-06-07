@@ -24,9 +24,14 @@ def sign_license(user: str, expires: str, shared_key_hex: str, priv_pem: str, as
     return bytes(data)
 
 if __name__ == "__main__":
-    if len(sys.argv) not in (5, 6):
-        print("usage: ntag_sign.py <user> <YYYY-MM-DD> <shared_key_hex> <priv.pem> [asset_pack]")
+    if len(sys.argv) not in (6, 7):
+        print("usage: ntag_sign.py <user> <YYYY-MM-DD> <shared_key_hex> <priv.pem> <output_file> [asset_pack]")
         sys.exit(1)
-    asset_pack = sys.argv[5] if len(sys.argv) == 6 else ""
+
+    output_file = sys.argv[5]
+    asset_pack = sys.argv[6] if len(sys.argv) == 7 else ""
     blob = sign_license(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], asset_pack)
-    sys.stdout.buffer.write(blob)
+
+    # 以二进制方式写入文件
+    with open(output_file, "wb") as f:
+        f.write(blob)

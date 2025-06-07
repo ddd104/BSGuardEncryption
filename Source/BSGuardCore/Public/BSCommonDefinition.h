@@ -9,6 +9,7 @@ THIRD_PARTY_INCLUDES_START
 #include <openssl/evp.h>
 #include <openssl/rand.h>
 #include <openssl/pem.h>
+#include <openssl/sha.h>
 THIRD_PARTY_INCLUDES_END
 
 #ifdef OPENSSL_API_COMPAT
