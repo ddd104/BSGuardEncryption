@@ -7,7 +7,7 @@ public class BSGuardEditor : ModuleRules
 	public BSGuardEditor(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
-		
+		OptimizeCode = CodeOptimization.Never;
 		PrivateDependencyModuleNames.AddRange(
 			new string[]
 			{

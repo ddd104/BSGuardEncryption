@@ -10,7 +10,7 @@ static FString GetPublicKeyPem()
 	{
 		return FString();
 	}
-	FString KeyPath = FPaths::Combine(Plugin->GetBaseDir(), TEXT("Resources"), TEXT("root_public.pem"));
+	FString KeyPath = FPaths::Combine(Plugin->GetBaseDir(), TEXT("license"), TEXT("root_public.pem"));
 	FString Pem;
 	FFileHelper::LoadFileToString(Pem, *KeyPath);
 	return Pem;

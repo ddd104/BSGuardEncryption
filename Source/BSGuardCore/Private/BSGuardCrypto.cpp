@@ -40,14 +40,20 @@ bool FBSGuardCrypto::IsEncryptedAssetFile(const FString& FilePath)
     // 读取文件头4字节检查魔数
     uint8 Header[4] = {0};
     IPlatformFile& PlatFile = FPlatformFileManager::Get().GetPlatformFile();
-    TUniquePtr<IFileHandle> FileHandle(PlatFile.OpenRead(*AbsolutePath));
+    IPlatformFile* RawFile = PlatFile.GetLowerLevel();
+    if (!RawFile)
+    {
+        RawFile = &PlatFile;
+    }
+    TUniquePtr<IFileHandle> FileHandle(RawFile->OpenRead(*AbsolutePath));
     if (!FileHandle)
     {
         return false;
     }
     if (FileHandle->Read(Header, sizeof(Header)))
     {
-        return FMemory::Memcmp(Header, BSGE::CryptoMagic, 4) == 0;
+        bool ret = FMemory::Memcmp(Header, BSGE::CryptoMagic, 4) != 0;
+        return ret;
     }
     return false;
 }

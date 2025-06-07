@@ -17,7 +17,7 @@ public class BSGuardCore : ModuleRules
 	public BSGuardCore(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
-		
+		OptimizeCode = CodeOptimization.Never;
 		PublicDependencyModuleNames.AddRange(
 			new string[]
 			{
