@@ -16,4 +16,8 @@ public:
 	static bool LoadLicense(const FString& FilePath, FBSLicenseData& OutData);
 
 	static FString GetPublicKeyPem();
+
+	static TArray<uint8> GetSharedKey();
+
+	static TArray<uint8> SharedKey;
 };

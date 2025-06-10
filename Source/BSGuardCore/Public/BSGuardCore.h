@@ -14,4 +14,5 @@ public:
 private:
 	IPlatformFile* OriginalPlatformFile = nullptr;
 	TUniquePtr<class FBSGuardPlatformFile> GuardPlatformFile;
+	TSharedPtr<class FBSGuardSettings> BSGuardSettings;
 };

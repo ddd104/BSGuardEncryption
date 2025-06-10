@@ -12,19 +12,24 @@ UBSGuardEncryptCmdlet::UBSGuardEncryptCmdlet()
 	LogToConsole = true;
 }
 
+UBSGuardEncryptCmdlet::~UBSGuardEncryptCmdlet()
+{
+	
+}
+
 int32 UBSGuardEncryptCmdlet::Main(const FString& Params)
 {
 	UE_LOG(LogTemp, Display, TEXT("GuardEncryptCmdlet started with params: %s"), *Params);
 
 	// 在命令行中，无法通过UI输入密钥，因此需通过Params传入或在运行前已配置
 	// 这里假设Params包含了密钥或在DefaultEngine.ini里存了密钥（实际不推荐明文ini）
-	UBSGuardSettings* Settings = GetMutableDefault<UBSGuardSettings>();
-	if (!Settings || !Settings->ValidateAndSetKey())
+	BSGuardSettings = MakeShared<FBSGuardSettings>();
+	if (!BSGuardSettings || !BSGuardSettings->ValidateAndSetKey())
 	{
 		UE_LOG(LogTemp, Error, TEXT("No valid encryption key provided. Use -Key=<Base64Key> in Params."));
 		return -1;
 	}
-	FBSGuardCrypto::SetKey(Settings->GetKeyBytes());
+	FBSGuardCrypto::SetKey(BSGuardSettings->GetKeyBytes());
 
 	// 确定扫描路径，默认为项目Content目录
 	FString TargetPath = FPaths::ProjectContentDir();

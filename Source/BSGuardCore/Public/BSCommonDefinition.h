@@ -18,6 +18,8 @@ THIRD_PARTY_INCLUDES_END
 #endif
 
 
+#define BSGE_META_ENCRYPT_KEY TEXT("BSGE_EncryptTag")
+
 namespace BSGE
 {
 	constexpr uint8  CryptoMagic[4]   = { 'B', 'S', 'G', 'E' };

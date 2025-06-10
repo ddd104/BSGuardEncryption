@@ -1,6 +1,7 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "BSGuardEditor.h"
+
 #include "ContentBrowserModule.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
 #include "BSGuardCrypto.h"
@@ -35,8 +36,18 @@ void FBSGuardEditorModule::StartupModule()
 	// 注册保存包事件，以在资产保存后自动加密
 	UPackage::PackageSavedWithContextEvent.AddStatic([](const FString& PackageFileName, UPackage* Package, FObjectPostSaveContext Context)
 	{
+		const FName Key(TEXT("BSGE_EncryptTag"));
+		UMetaData* MD = Package ? Package->GetMetaData() : nullptr;
+		if (!MD || !MD->HasValue(Package, Key))
+		{
+			return; 
+		}
+		if (MD->HasValue(Package, TEXT("BSGE_ReadyToEncrypt")))
+		{
+			return;
+		}
 		// 当一个资产包保存成功后触发
-		if (FBSGuardCrypto::HasValidKey() && FBSGuardCrypto::IsEncryptedAssetFile(PackageFileName) == false)
+		if (FBSGuardCrypto::IsEncryptedAssetFile(PackageFileName) == false)
 		{
 			// 如果存在有效密钥，且当前保存的是未加密文件，将其加密
 			if (FBSGuardCrypto::EncryptFile(PackageFileName))
@@ -73,7 +84,7 @@ void FBSGuardEditorModule::CreateAssetContextMenu(FMenuBuilder& MenuBuilder, con
 	if (SelectedAssets.Num() == 0) return;
 	const FAssetData& AssetData = SelectedAssets[0];
 	FString AssetFilePath = AssetData.PackageName.ToString();
-	AssetFilePath = FPackageName::LongPackageNameToFilename(AssetFilePath, FPackageName::GetAssetPackageExtension());  // 转换为.uasset文件路径
+	AssetFilePath = FPackageName::LongPackageNameToFilename(AssetFilePath, FPackageName::GetAssetPackageExtension());
 
 	// 检查该资产文件是否已加密
 	bool bIsEncrypted = FBSGuardCrypto::IsEncryptedAssetFile(AssetFilePath);
@@ -87,7 +98,17 @@ void FBSGuardEditorModule::CreateAssetContextMenu(FMenuBuilder& MenuBuilder, con
 			FUIAction(
 				FExecuteAction::CreateLambda([AssetData]()
 				{
-					FBSGuardEditorModule::DecryptSelectedAsset(AssetData);
+					UPackage* Package = AssetData.GetPackage();
+					if (Package)
+					{
+						UMetaData* MD = Package ? Package->GetMetaData() : nullptr;
+						if (MD)
+						{
+							//MD->SetValue(Package, FName(TEXT("BSGE_EncryptTag")), TEXT("true"));
+							MD->RemoveValue(Package, FName(TEXT("BSGE_EncryptTag")));
+						}
+					}
+					DecryptSelectedAsset(AssetData);
 				}),
 				FCanExecuteAction::CreateLambda([AssetFilePath]()
 				{
@@ -107,7 +128,17 @@ void FBSGuardEditorModule::CreateAssetContextMenu(FMenuBuilder& MenuBuilder, con
 			FUIAction(
 				FExecuteAction::CreateLambda([AssetData]()
 				{
-						FBSGuardEditorModule::EncryptSelectedAsset(AssetData);
+					UPackage* Package = AssetData.GetPackage();
+					if (Package)
+					{
+						UMetaData* MD = Package ? Package->GetMetaData() : nullptr;
+						if (MD)
+						{
+							MD->SetValue(Package, FName(TEXT("BSGE_EncryptTag")), TEXT("true"));
+							MD->SetValue(Package, FName(TEXT("BSGE_ReadyToEncrypt")), TEXT("true"));
+						}
+					}
+					EncryptSelectedAsset(AssetData);
 				}),
 				FCanExecuteAction::CreateLambda([AssetFilePath]()
 				{
@@ -137,6 +168,11 @@ void FBSGuardEditorModule::EncryptSelectedAsset(const FAssetData& AssetData)
 		// 保存Package到磁盘，以更新.uasset文件
 		FString Error;
 		UPackage::SavePackage(Package, nullptr, RF_Public | RF_Standalone, *AssetFilePath, nullptr, nullptr, false, true, SAVE_NoError);
+	}
+	UMetaData* MD = Package ? Package->GetMetaData() : nullptr;
+	if (MD)
+	{
+		MD->RemoveValue(Package, FName(TEXT("BSGE_ReadyToEncrypt")));
 	}
 	// 执行加密
 	if (FBSGuardCrypto::EncryptFile(AssetFilePath))
@@ -177,17 +213,17 @@ void FBSGuardEditorModule::DecryptSelectedAsset(const FAssetData& AssetData)
 		return;
 	}
 	// 执行解密（需注意解密后文件即为明文，应妥善处理）
-	if (FBSGuardCrypto::DecryptFile(AssetFilePath))
+	if (FBSGuardCrypto::DecryptFile(AssetFilePath, AssetData))
 	{
 		FString UexpPath = FPaths::ChangeExtension(AssetFilePath, TEXT(".uexp"));
 		if (IFileManager::Get().FileExists(*UexpPath))
 		{
-			FBSGuardCrypto::DecryptFile(UexpPath);
+			FBSGuardCrypto::DecryptFile(UexpPath, AssetData);
 		}
 		FString UbulkPath = FPaths::ChangeExtension(AssetFilePath, TEXT(".ubulk"));
 		if (IFileManager::Get().FileExists(*UbulkPath))
 		{
-			FBSGuardCrypto::DecryptFile(UbulkPath);
+			FBSGuardCrypto::DecryptFile(UbulkPath, AssetData);
 		}
 		UE_LOG(LogTemp, Display, TEXT("Asset %s decrypted."), *PackageName);
 		// 重新加载资产，以反映明文（例如此时可以打开查看）

@@ -17,12 +17,12 @@ public:
 	static bool EncryptFile(const FString& FilePath);
 
 	// 对指定文件进行AES-GCM解密，还原为明文文件（覆盖原文件内容）。
-	static bool DecryptFile(const FString& FilePath);
+	static bool DecryptFile(const FString& FilePath, const FAssetData& AssetData);
 
 
 	// AES-GCM 加解密实现
-	static bool Encrypt(const TArray<uint8>& PlainData, TArray<uint8>& OutEncryptedData, TArray<uint8>& OutIV, TArray<uint8>& OutAuthTag);
-	static bool Decrypt(const TArray<uint8>& EncryptedData, const TArray<uint8>& IV, const TArray<uint8>& AuthTag, TArray<uint8>& OutPlainData);
+	static bool Encrypt(const TArray<uint8>& PlainData, TArray<uint8>& OutEncryptedData);
+	static bool Decrypt(const TArray<uint8>& EncryptedData, TArray<uint8>& OutPlainData);
 
 	static bool GenRandomBytes(uint8* Out, int32 Num);
 	// 当前使用的对称密钥和有效性

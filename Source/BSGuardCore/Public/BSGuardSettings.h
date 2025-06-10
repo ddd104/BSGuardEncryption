@@ -4,22 +4,16 @@
 
 #include "CoreMinimal.h"
 #include "UObject/Object.h"
-#include "BSGuardSettings.generated.h"
 
 /**
  * 
  */
-UCLASS(Config=EditorPerProjectUserSettings)
-class BSGUARDCORE_API UBSGuardSettings : public UObject
+class BSGUARDCORE_API FBSGuardSettings
 {
-	GENERATED_BODY()
 public:
-	// 新增：License文件路径，可在项目设置中选择
-	UPROPERTY(EditAnywhere, Category="GuardEncryption", meta=(DisplayName="License File"))
+	FBSGuardSettings(){}
 	FString LicenseFilePath;
-
-	// 密钥过期时间（例如GMT字符串或时间戳），可选由插件提供，只读显示
-	UPROPERTY(EditAnywhere, Category="GuardEncryption", meta=(DisplayName="Key Expiration"), Transient)
+	
 	FString KeyExpiration;
 
 	// 验证密钥有效性（正确性及未过期）。成功返回true并将内部密钥设置好，失败返回false。

@@ -1,5 +1,6 @@
 ﻿#include "BSGuardCrypto.h"
 #include "BSCommonDefinition.h"
+#include "BSLicenseUtils..h"
 
 
 uint8 FBSGuardCrypto::Key[32];
@@ -73,9 +74,7 @@ bool FBSGuardCrypto::EncryptFile(const FString& FilePath)
     }
     // 执行加密
     TArray<uint8> EncryptedData;
-    TArray<uint8> IV;
-    TArray<uint8> AuthTag;
-    if (!Encrypt(PlainData, EncryptedData, IV, AuthTag))
+    if (!Encrypt(PlainData, EncryptedData))
     {
         UE_LOG(LogTemp, Error, TEXT("Encryption failed for file: %s"), *FilePath);
         return false;
@@ -83,9 +82,7 @@ bool FBSGuardCrypto::EncryptFile(const FString& FilePath)
     // 组成最终文件数据: [BSGE::CryptoMagic][IV][CipherData][AuthTag]
     TArray<uint8> FileOut;
     FileOut.Append(BSGE::CryptoMagic, 4);
-    FileOut.Append(IV);              // 12字节IV
     FileOut.Append(EncryptedData);   // 密文数据
-    FileOut.Append(AuthTag);         // 16字节认证Tag
     // 写入文件（覆盖原文件内容）
     if (!FFileHelper::SaveArrayToFile(FileOut, *FilePath))
     {
@@ -95,7 +92,7 @@ bool FBSGuardCrypto::EncryptFile(const FString& FilePath)
     return true;
 }
 
-bool FBSGuardCrypto::DecryptFile(const FString& FilePath)
+bool FBSGuardCrypto::DecryptFile(const FString& FilePath, const FAssetData& AssetData)
 {
     if (!bKeyIsSet)
     {
@@ -109,32 +106,17 @@ bool FBSGuardCrypto::DecryptFile(const FString& FilePath)
         UE_LOG(LogTemp, Error, TEXT("Failed to read encrypted file: %s"), *FilePath);
         return false;
     }
-    // 检查长度是否至少包含头和Tag
-    if (FileData.Num() < 4 + 12 + 16)
-    {
-        UE_LOG(LogTemp, Error, TEXT("File too small or not an encrypted asset: %s"), *FilePath);
-        return false;
-    }
+
     // 提取并验证魔数
     if (FMemory::Memcmp(FileData.GetData(), BSGE::CryptoMagic, 4) != 0)
     {
         UE_LOG(LogTemp, Error, TEXT("File %s is not recognized as encrypted (magic mismatch)."), *FilePath);
         return false;
     }
-    // 提取IV和AuthTag
-    TArray<uint8> IV;
-    IV.Append(FileData.GetData() + 4, 12);
-    TArray<uint8> AuthTag;
-    AuthTag.Append(FileData.GetData() + FileData.Num() - 16, 16);
-    // 提取密文主体
-    int32 CipherOffset = 4 + 12;
-    int32 CipherSize = FileData.Num() - CipherOffset - 16;
-    if (CipherSize < 0) CipherSize = 0;
-    TArray<uint8> CipherData;
-    CipherData.Append(FileData.GetData() + CipherOffset, CipherSize);
+    
     // 解密
     TArray<uint8> PlainData;
-    if (!Decrypt(CipherData, IV, AuthTag, PlainData))
+    if (!Decrypt(FileData, PlainData))
     {
         UE_LOG(LogTemp, Error, TEXT("Decryption failed or authentication tag mismatch for file: %s"), *FilePath);
         return false;
@@ -149,100 +131,121 @@ bool FBSGuardCrypto::DecryptFile(const FString& FilePath)
 }
 
 // 使用OpenSSL EVP接口实现AES-256-GCM加密
-bool FBSGuardCrypto::Encrypt(const TArray<uint8>& PlainData, TArray<uint8>& OutEncryptedData,
-                                     TArray<uint8>& OutIV, TArray<uint8>& OutAuthTag)
+bool FBSGuardCrypto::Encrypt(const TArray<uint8>& InPlain, TArray<uint8>& OutCipher)
 {
-    // 生成随机12字节IV
-    OutIV.SetNumUninitialized(12);
-    GenRandomBytes(OutIV.GetData(), OutIV.Num());
+    const TArray<uint8>& SharedKey = FBSLicenseUtils::GetSharedKey();
+    if (SharedKey.Num() != 64)
+    {
+        UE_LOG(LogTemp, Error, TEXT("SharedKey invalid"));
+        return false;
+    }
+
+    /* 1. 生成 12-byte Nonce */
+    uint8 IV[BSGE::GcmNonceSize];
+    if (!GenRandomBytes(IV, BSGE::GcmNonceSize))
+    {
+        return false;
+    }
+
+    /* 2. 创建上下文 */
     EVP_CIPHER_CTX* Ctx = EVP_CIPHER_CTX_new();
-    if (!Ctx) return false;
-    const EVP_CIPHER* Cipher = EVP_aes_256_gcm();
-    int32 OutLen = 0;
-    int32 CipherLen = 0;
-    // 初始化加密CTX
-    if (EVP_EncryptInit_ex(Ctx, Cipher, NULL, Key, OutIV.GetData()) != 1)
+    if (!Ctx)
     {
-        EVP_CIPHER_CTX_free(Ctx);
         return false;
     }
-    // 分配输出缓冲区
-    OutEncryptedData.SetNumUninitialized(PlainData.Num());
-    // 加密更新
-    if (PlainData.Num() > 0)
+
+    int32 PlainLen   = InPlain.Num();
+    int32 CipherLen  = 0;
+    int32 TmpLen     = 0;
+    TArray<uint8> CipherText;
+    CipherText.SetNumUninitialized(PlainLen);   // GCM 不膨胀数据
+
+    bool bOK =
+        EVP_EncryptInit_ex(Ctx, EVP_aes_256_gcm(), nullptr, nullptr, nullptr) == 1 &&
+        EVP_CIPHER_CTX_ctrl (Ctx, EVP_CTRL_GCM_SET_IVLEN, BSGE::GcmNonceSize, nullptr) == 1 &&
+        EVP_EncryptInit_ex(Ctx, nullptr, nullptr, SharedKey.GetData(), IV)          == 1 &&
+        EVP_EncryptUpdate (Ctx, CipherText.GetData(), &CipherLen,
+                           InPlain.GetData(), PlainLen)                       == 1 &&
+        EVP_EncryptFinal_ex(Ctx, CipherText.GetData() + CipherLen, &TmpLen)   == 1;
+
+    CipherLen += TmpLen;
+
+    uint8 Tag[BSGE::GcmTagSize];
+    if (bOK)
     {
-        if (EVP_EncryptUpdate(Ctx, OutEncryptedData.GetData(), &OutLen, PlainData.GetData(), PlainData.Num()) != 1)
-        {
-            EVP_CIPHER_CTX_free(Ctx);
-            return false;
-        }
-        CipherLen = OutLen;
-    }
-    // 加密Final（GCM模式下不会输出数据，但需调用以计算AuthTag）
-    if (EVP_EncryptFinal_ex(Ctx, OutEncryptedData.GetData() + CipherLen, &OutLen) != 1)
-    {
-        EVP_CIPHER_CTX_free(Ctx);
-        return false;
-    }
-    CipherLen += OutLen;
-    OutEncryptedData.SetNum(CipherLen); // 调整密文长度
-    // 获取认证Tag（16字节）
-    OutAuthTag.SetNumUninitialized(16);
-    if (EVP_CIPHER_CTX_ctrl(Ctx, EVP_CTRL_GCM_GET_TAG, 16, OutAuthTag.GetData()) != 1)
-    {
-        EVP_CIPHER_CTX_free(Ctx);
-        return false;
+        bOK = EVP_CIPHER_CTX_ctrl(Ctx, EVP_CTRL_GCM_GET_TAG, BSGE::GcmTagSize, Tag) == 1;
     }
     EVP_CIPHER_CTX_free(Ctx);
+
+    if (!bOK)
+    {
+        UE_LOG(LogTemp, Error, TEXT("Encrypt failed")); return false;
+    }
+
+    /* 3. 组包：Magic|Ver|Nonce|Tag|Cipher */
+    OutCipher.Reset();
+    OutCipher.Append(BSGE::CryptoMagic, 4);
+    OutCipher.Add   (BSGE::CryptoVersion);
+    OutCipher.Append(IV, BSGE::GcmNonceSize);
+    OutCipher.Append(Tag, BSGE::GcmTagSize);
+    OutCipher.Append(CipherText.GetData(), CipherLen);
     return true;
 }
 
 // 使用OpenSSL EVP接口实现AES-256-GCM解密
-bool FBSGuardCrypto::Decrypt(const TArray<uint8>& EncryptedData, const TArray<uint8>& IV,
-                                     const TArray<uint8>& AuthTag, TArray<uint8>& OutPlainData)
+bool FBSGuardCrypto::Decrypt(const TArray<uint8>& InCipher, TArray<uint8>& OutPlain)
 {
-    if (IV.Num() != 12 || AuthTag.Num() != 16)
+    const int32 MinSize = 4 + 1 + BSGE::GcmNonceSize + BSGE::GcmTagSize;
+    if (InCipher.Num() < MinSize)
     {
         return false;
     }
+    if (FMemory::Memcmp(InCipher.GetData(), BSGE::CryptoMagic, 4) != 0)
+    {
+        return false;
+    }
+    if (InCipher[4] != BSGE::CryptoVersion)
+    {
+        UE_LOG(LogTemp, Error, TEXT("Version mismatch")); return false;
+    }
+
+    const uint8* IV    = InCipher.GetData() + 5;
+    const uint8* Tag   = IV + BSGE::GcmNonceSize;
+    const uint8* Data  = Tag + BSGE::GcmTagSize;
+    const int32  DataLen = InCipher.Num() - MinSize;
+
+    const TArray<uint8>& SharedKey = FBSLicenseUtils::GetSharedKey();
+    if (SharedKey.Num() != 32)
+    {
+        return false;
+    }
+
     EVP_CIPHER_CTX* Ctx = EVP_CIPHER_CTX_new();
-    if (!Ctx) return false;
-    const EVP_CIPHER* Cipher = EVP_aes_256_gcm();
-    int32 OutLen = 0;
+    if (!Ctx)
+    {
+        return false;
+    }
+
+    OutPlain.SetNumUninitialized(DataLen);
+
     int32 PlainLen = 0;
-    // 初始化解密
-    if (EVP_DecryptInit_ex(Ctx, Cipher, NULL, Key, IV.GetData()) != 1)
-    {
-        EVP_CIPHER_CTX_free(Ctx);
-        return false;
-    }
-    // 提供密文数据
-    OutPlainData.SetNumUninitialized(EncryptedData.Num());
-    if (EncryptedData.Num() > 0)
-    {
-        if (EVP_DecryptUpdate(Ctx, OutPlainData.GetData(), &OutLen, EncryptedData.GetData(), EncryptedData.Num()) != 1)
-        {
-            EVP_CIPHER_CTX_free(Ctx);
-            return false;
-        }
-        PlainLen = OutLen;
-    }
-    // 设置期望的AuthTag用于验证
-    if (EVP_CIPHER_CTX_ctrl(Ctx, EVP_CTRL_GCM_SET_TAG, AuthTag.Num(), (void*)AuthTag.GetData()) != 1)
-    {
-        EVP_CIPHER_CTX_free(Ctx);
-        return false;
-    }
-    // Final解密并验证Tag
-    if (EVP_DecryptFinal_ex(Ctx, OutPlainData.GetData() + PlainLen, &OutLen) != 1)
-    {
-        // 验证失败（可能密钥不对或数据被篡改）
-        EVP_CIPHER_CTX_free(Ctx);
-        return false;
-    }
-    PlainLen += OutLen;
-    OutPlainData.SetNum(PlainLen);
+    int32 TmpLen   = 0;
+    bool bOK =
+        EVP_DecryptInit_ex(Ctx, EVP_aes_256_gcm(), nullptr, nullptr, nullptr) == 1 &&
+        EVP_CIPHER_CTX_ctrl (Ctx, EVP_CTRL_GCM_SET_IVLEN, BSGE::GcmNonceSize, nullptr) == 1 &&
+        EVP_DecryptInit_ex(Ctx, nullptr, nullptr, SharedKey.GetData(), IV)          == 1 &&
+        EVP_DecryptUpdate (Ctx, OutPlain.GetData(), &PlainLen, Data, DataLen) == 1 &&
+        EVP_CIPHER_CTX_ctrl (Ctx, EVP_CTRL_GCM_SET_TAG, BSGE::GcmTagSize, (void*)Tag)  == 1 &&
+        EVP_DecryptFinal_ex (Ctx, OutPlain.GetData() + PlainLen, &TmpLen)     == 1;
+
     EVP_CIPHER_CTX_free(Ctx);
+    if (!bOK)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("Decrypt auth failed"));
+        return false;
+    }
+
+    OutPlain.SetNum(PlainLen + TmpLen);
     return true;
 }
 

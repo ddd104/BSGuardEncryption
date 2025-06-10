@@ -18,17 +18,18 @@
 		{
 			"Name": "BSGuardCore",
 			"Type": "Runtime",
-			"LoadingPhase": "Default"
+			"LoadingPhase": "PreEarlyLoadingScreen",
+			"PreloadDependencies": ["AssetRegistry"]
 		},
 		{
 			"Name": "BSGuardEditor",
 			"Type": "Editor",
-			"LoadingPhase": "Default"
+			"LoadingPhase": "PostEngineInit"
 		},
 		{
 			"Name": "BSGuardCmdlet",
 			"Type": "Developer",
-			"LoadingPhase": "Default"
+			"LoadingPhase": "PostEngineInit"
 		}
 	]
 }

@@ -15,7 +15,8 @@ class BSGUARDCMDLET_API UBSGuardEncryptCmdlet : public UCommandlet
 	GENERATED_BODY()
 public:
 	UBSGuardEncryptCmdlet();
+	~UBSGuardEncryptCmdlet();
 	// 主执行函数
 	virtual int32 Main(const FString& Params) override;
-
+	TSharedPtr<class FBSGuardSettings> BSGuardSettings;
 };

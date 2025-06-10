@@ -10,13 +10,13 @@
 
 void FBSGuardCoreModule::StartupModule()
 {
-	UBSGuardSettings* Settings = GetMutableDefault<UBSGuardSettings>();
-	if (Settings)
+	BSGuardSettings = MakeShared<FBSGuardSettings>();
+	if (BSGuardSettings)
 	{
-		if (Settings->ValidateAndSetKey())
+		if (BSGuardSettings->ValidateAndSetKey())
 		{
 			// 将验证后的密钥字节设置给加密模块
-			FBSGuardCrypto::SetKey(Settings->GetKeyBytes());
+			FBSGuardCrypto::SetKey(BSGuardSettings->GetKeyBytes());
 		}
 		else
 		{
@@ -44,6 +44,7 @@ void FBSGuardCoreModule::ShutdownModule()
 		FPlatformFileManager::Get().SetPlatformFile(*OriginalPlatformFile);
 	}
 	GuardPlatformFile.Reset();
+	BSGuardSettings.Reset();
 	UE_LOG(LogTemp, Log, TEXT("GuardEncryption: Platform file restored to original on shutdown."));
 }
 

@@ -5,6 +5,10 @@
 #include "Misc/FileHelper.h"
 #include "Misc/Base64.h"
 
+
+
+TArray<uint8> FBSLicenseUtils::SharedKey = TArray<uint8>();
+
 FString FBSLicenseUtils::GetPublicKeyPem()
 {
 	TSharedPtr<IPlugin> Plugin = IPluginManager::Get().FindPlugin(TEXT("BSGuardEncryption"));
@@ -16,6 +20,22 @@ FString FBSLicenseUtils::GetPublicKeyPem()
 	FString Pem;
 	FFileHelper::LoadFileToString(Pem, *KeyPath);
 	return Pem;
+}
+
+TArray<uint8> FBSLicenseUtils::GetSharedKey()
+{
+	if (SharedKey.Num() == 0)
+	{
+		TSharedPtr<IPlugin> Plugin = IPluginManager::Get().FindPlugin(TEXT("BSGuardEncryption"));
+		if (!Plugin.IsValid())
+		{
+			return TArray<uint8>();
+		}
+		FString KeyPath = FPaths::Combine(Plugin->GetBaseDir(), TEXT("license"), TEXT("SharedKey"));
+		FFileHelper::LoadFileToArray(SharedKey, *KeyPath);
+	}
+	
+    return SharedKey;
 }
 
 #if WITH_OPENSSL

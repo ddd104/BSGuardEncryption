@@ -31,7 +31,7 @@ static void DeriveKeyFromPublicKey(TArray<uint8>& OutKey)
 #endif
 }
 
-bool UBSGuardSettings::ValidateAndSetKey()
+bool FBSGuardSettings::ValidateAndSetKey()
 {
 	bKeyIsValid = false;
 	KeyBytes.Empty();
@@ -74,7 +74,7 @@ bool UBSGuardSettings::ValidateAndSetKey()
 	return false;
 }
 
-const TArray<uint8>& UBSGuardSettings::GetKeyBytes() const
+const TArray<uint8>& FBSGuardSettings::GetKeyBytes() const
 {
 	return KeyBytes;
 }

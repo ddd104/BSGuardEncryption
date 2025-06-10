@@ -112,28 +112,15 @@ IFileHandle* FBSGuardPlatformFile::OpenRead(const TCHAR* Filename, bool bAllowWr
 {
 	FString FilePath(Filename);
 	// 只拦截特定扩展名的资产文件
-	bool bIsAssetFile = FilePath.EndsWith(TEXT(".uasset")) || FilePath.EndsWith(TEXT(".uexp")) || FilePath.EndsWith(TEXT(".ubulk"));
-	if (bIsAssetFile)
+	if (FBSGuardCrypto::IsEncryptedAssetFile(FilePath))
 	{
-		UE_LOG(LogTemp, Log, TEXT("123"));
-		if (FBSGuardCrypto::IsEncryptedAssetFile(FilePath))
+		// 使用自定义读取句柄，以解密方式提供数据
+		IFileHandle* InnerHandle = LowerLevel->OpenRead(Filename, bAllowWrite);
+		if (!InnerHandle)
 		{
-			// 文件是加密的资产
-			if (!FBSGuardCrypto::HasValidKey())
-			{
-				// 没有有效密钥，拒绝读取
-				UE_LOG(LogTemp, Warning, TEXT("Attempted to read encrypted asset %s without valid key."), *FilePath);
-				return nullptr; // 返回空指针表示无法打开
-			}
-			// 使用自定义读取句柄，以解密方式提供数据
-			IFileHandle* InnerHandle = LowerLevel->OpenRead(Filename, bAllowWrite);
-			if (!InnerHandle)
-			{
-				return nullptr;
-			}
-			return new FBSGuardFileHandleRead(InnerHandle);
+			return nullptr;
 		}
-		// 非加密资产文件，直接正常读取
+		return new FBSGuardFileHandleRead(InnerHandle);
 	}
 	// 对于不拦截的文件，直接调用底层
 	return LowerLevel->OpenRead(Filename, bAllowWrite);
