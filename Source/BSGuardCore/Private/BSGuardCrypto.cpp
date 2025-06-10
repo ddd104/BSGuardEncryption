@@ -79,13 +79,22 @@ bool FBSGuardCrypto::EncryptFile(const FString& FilePath)
         UE_LOG(LogTemp, Error, TEXT("Encryption failed for file: %s"), *FilePath);
         return false;
     }
+    
+    // 写入文件（覆盖原文件内容），直接使用底层平台文件以避免再次被加密
+    IPlatformFile& PlatFile = FPlatformFileManager::Get().GetPlatformFile();
+    IPlatformFile* RawFile = PlatFile.GetLowerLevel();
+    if (!RawFile)
+    {
+        RawFile = &PlatFile;
+    }
 
-    // 写入文件（覆盖原文件内容）
-    if (!FFileHelper::SaveArrayToFile(EncryptedData, *FilePath))
+    TUniquePtr<IFileHandle> FileHandle(RawFile->OpenWrite(*FilePath, false));
+    if (!FileHandle || !FileHandle->Write(EncryptedData.GetData(), EncryptedData.Num()))
     {
         UE_LOG(LogTemp, Error, TEXT("Failed to write encrypted file: %s"), *FilePath);
         return false;
     }
+    FileHandle->Flush(true);
     return true;
 }
 
@@ -119,12 +128,20 @@ bool FBSGuardCrypto::DecryptFile(const FString& FilePath, const FAssetData& Asse
         return false;
     }
     */
-    // 解密成功，写回明文文件数据
-    if (!FFileHelper::SaveArrayToFile(FileData, *FilePath))
+    // 解密成功，写回明文文件数据，直接使用底层平台文件以避免被加密
+    IPlatformFile& PlatFile = FPlatformFileManager::Get().GetPlatformFile();
+    IPlatformFile* RawFile = PlatFile.GetLowerLevel();
+    if (!RawFile)
+    {
+        RawFile = &PlatFile;
+    }
+    TUniquePtr<IFileHandle> FileHandle(RawFile->OpenWrite(*FilePath, false));
+    if (!FileHandle || !FileHandle->Write(FileData.GetData(), FileData.Num()))
     {
         UE_LOG(LogTemp, Error, TEXT("Failed to write decrypted file: %s"), *FilePath);
         return false;
     }
+    FileHandle->Flush(true);
     return true;
 }
 
