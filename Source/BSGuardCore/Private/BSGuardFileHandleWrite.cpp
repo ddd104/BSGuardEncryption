@@ -4,7 +4,7 @@
 
 FBSGuardPlatformFile::FBSGuardFileHandleWrite::FBSGuardFileHandleWrite(IFileHandle* InHandle): InnerHandle(InHandle)
 {
-	bError = false;
+	/*bError = false;
 
 	// Magic
 	InnerHandle->Write(BSGE::CryptoMagic, 4);
@@ -30,20 +30,20 @@ FBSGuardPlatformFile::FBSGuardFileHandleWrite::FBSGuardFileHandleWrite(IFileHand
 	{
 		bError = true;
 		UE_LOG(LogTemp, Error, TEXT("Failed to initialize AES-GCM context for writing."));
-	}
+	}*/
 }
 
 FBSGuardPlatformFile::FBSGuardFileHandleWrite::~FBSGuardFileHandleWrite()
 {
 	// 析构时确保Flush输出Tag并释放资源
 	Flush();
-	if (Ctx)
+	/*if (Ctx)
 	{
 		EVP_CIPHER_CTX_free(Ctx);
 		Ctx = nullptr;
 	}
 	delete InnerHandle;
-	InnerHandle = nullptr;
+	InnerHandle = nullptr;*/
 }
 
 int64 FBSGuardPlatformFile::FBSGuardFileHandleWrite::Tell()
@@ -74,7 +74,7 @@ bool FBSGuardPlatformFile::FBSGuardFileHandleWrite::Read(uint8* Destination, int
 
 bool FBSGuardPlatformFile::FBSGuardFileHandleWrite::Write(const uint8* Source, int64 BytesToWrite)
 {
-	if (bError || !InnerHandle) return false;
+	/*if (bError || !InnerHandle) return false;
 	// 加密源数据块
 	int32 OutLen = 0;
 	EncryptedBuffer.SetNumUninitialized(BytesToWrite);
@@ -89,13 +89,13 @@ bool FBSGuardPlatformFile::FBSGuardFileHandleWrite::Write(const uint8* Source, i
 	{
 		bError = true;
 		return false;
-	}
-	return true;
+	}*/
+	return InnerHandle->Write(Source, BytesToWrite);
 }
 
 bool FBSGuardPlatformFile::FBSGuardFileHandleWrite::Flush(const bool bFullFlush)
 {
-	if (bError || !InnerHandle)
+	/*if (bError || !InnerHandle)
 	{
 		return false;
 	}
@@ -122,7 +122,7 @@ bool FBSGuardPlatformFile::FBSGuardFileHandleWrite::Flush(const bool bFullFlush)
 	int64 EndPos = InnerHandle->Tell();
 	InnerHandle->Seek(TagOffset);
 	InnerHandle->Write(AuthTag, BSGE::GcmTagSize);
-	InnerHandle->Seek(EndPos);
+	InnerHandle->Seek(EndPos);*/
 
 	// Flush underlying handle
 	return InnerHandle->Flush(bFullFlush);

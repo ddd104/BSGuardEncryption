@@ -204,7 +204,7 @@ bool FBSGuardCrypto::Decrypt(const TArray<uint8>& InCipher, TArray<uint8>& OutPl
     {
         return false;
     }
-    if (InCipher[4] != BSGE::CryptoVersion)
+    if (InCipher[6] != BSGE::CryptoVersion)
     {
         UE_LOG(LogTemp, Error, TEXT("Version mismatch")); return false;
     }
