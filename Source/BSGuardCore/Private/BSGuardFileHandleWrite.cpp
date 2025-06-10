@@ -1,18 +1,32 @@
 ﻿#include "BSGuardFileHandleWrite.h"
 #include "BSGuardCrypto.h"
+#include "BSLicenseUtils..h"
 
 FBSGuardPlatformFile::FBSGuardFileHandleWrite::FBSGuardFileHandleWrite(IFileHandle* InHandle): InnerHandle(InHandle)
 {
 	bError = false;
-	// 生成随机IV并写入文件头 (Magic + IV 占 4+12 字节)
+
+	// Magic
 	InnerHandle->Write(BSGE::CryptoMagic, 4);
-	IV.SetNumUninitialized(12);
+
+	// Version
+	uint8 Version = BSGE::CryptoVersion;
+	InnerHandle->Write(&Version, 1);
+
+	// Nonce
+	IV.SetNumUninitialized(BSGE::GcmNonceSize);
 	FBSGuardCrypto::GenRandomBytes(IV.GetData(), IV.Num());
 	InnerHandle->Write(IV.GetData(), IV.Num());
-	// 初始化OpenSSL加密CTX
+
+	// Reserve space for auth tag
+	TagOffset = InnerHandle->Tell();
+	uint8 Zero[BSGE::GcmTagSize] = {0};
+	InnerHandle->Write(Zero, BSGE::GcmTagSize);
+
+	// Init AES-GCM context
 	Ctx = EVP_CIPHER_CTX_new();
 	const EVP_CIPHER* Cipher = EVP_aes_256_gcm();
-	if (!Ctx || EVP_EncryptInit_ex(Ctx, Cipher, NULL, FBSGuardCrypto::Key, IV.GetData()) != 1)
+	if (!Ctx || EVP_EncryptInit_ex(Ctx, Cipher, NULL, FBSLicenseUtils::GetSharedKey().GetData(), IV.GetData()) != 1)
 	{
 		bError = true;
 		UE_LOG(LogTemp, Error, TEXT("Failed to initialize AES-GCM context for writing."));
@@ -81,30 +95,36 @@ bool FBSGuardPlatformFile::FBSGuardFileHandleWrite::Write(const uint8* Source, i
 
 bool FBSGuardPlatformFile::FBSGuardFileHandleWrite::Flush(const bool bFullFlush)
 {
-	if (bError || !InnerHandle) return false;
-	// 完成加密，获取AuthTag并写入文件末尾
+	if (bError || !InnerHandle)
+	{
+		return false;
+	}
+
+	// Finalize encryption and fetch tag
 	int32 OutLen = 0;
-	uint8 Dummy[16];
+	uint8 Dummy[BSGE::GcmTagSize];
 	if (EVP_EncryptFinal_ex(Ctx, Dummy, &OutLen) != 1)
 	{
 		UE_LOG(LogTemp, Error, TEXT("AES-GCM finalization failed."));
 		bError = true;
 		return false;
 	}
-	uint8 AuthTag[16];
-	if (EVP_CIPHER_CTX_ctrl(Ctx, EVP_CTRL_GCM_GET_TAG, 16, AuthTag) != 1)
+
+	uint8 AuthTag[BSGE::GcmTagSize];
+	if (EVP_CIPHER_CTX_ctrl(Ctx, EVP_CTRL_GCM_GET_TAG, BSGE::GcmTagSize, AuthTag) != 1)
 	{
 		UE_LOG(LogTemp, Error, TEXT("Failed to get AES-GCM auth tag."));
 		bError = true;
 		return false;
 	}
-	// 将认证Tag写入文件
-	if (!InnerHandle->Write(AuthTag, 16))
-	{
-		bError = true;
-		return false;
-	}
-	// 刷新文件缓冲
+
+	// Overwrite placeholder tag at header
+	int64 EndPos = InnerHandle->Tell();
+	InnerHandle->Seek(TagOffset);
+	InnerHandle->Write(AuthTag, BSGE::GcmTagSize);
+	InnerHandle->Seek(EndPos);
+
+	// Flush underlying handle
 	return InnerHandle->Flush(bFullFlush);
 }
 

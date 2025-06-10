@@ -79,12 +79,9 @@ bool FBSGuardCrypto::EncryptFile(const FString& FilePath)
         UE_LOG(LogTemp, Error, TEXT("Encryption failed for file: %s"), *FilePath);
         return false;
     }
-    // 组成最终文件数据: [BSGE::CryptoMagic][IV][CipherData][AuthTag]
-    TArray<uint8> FileOut;
-    FileOut.Append(BSGE::CryptoMagic, 4);
-    FileOut.Append(EncryptedData);   // 密文数据
+
     // 写入文件（覆盖原文件内容）
-    if (!FFileHelper::SaveArrayToFile(FileOut, *FilePath))
+    if (!FFileHelper::SaveArrayToFile(EncryptedData, *FilePath))
     {
         UE_LOG(LogTemp, Error, TEXT("Failed to write encrypted file: %s"), *FilePath);
         return false;
@@ -106,7 +103,7 @@ bool FBSGuardCrypto::DecryptFile(const FString& FilePath, const FAssetData& Asse
         UE_LOG(LogTemp, Error, TEXT("Failed to read encrypted file: %s"), *FilePath);
         return false;
     }
-
+    /*
     // 提取并验证魔数
     if (FMemory::Memcmp(FileData.GetData(), BSGE::CryptoMagic, 4) != 0)
     {
@@ -121,8 +118,9 @@ bool FBSGuardCrypto::DecryptFile(const FString& FilePath, const FAssetData& Asse
         UE_LOG(LogTemp, Error, TEXT("Decryption failed or authentication tag mismatch for file: %s"), *FilePath);
         return false;
     }
+    */
     // 解密成功，写回明文文件数据
-    if (!FFileHelper::SaveArrayToFile(PlainData, *FilePath))
+    if (!FFileHelper::SaveArrayToFile(FileData, *FilePath))
     {
         UE_LOG(LogTemp, Error, TEXT("Failed to write decrypted file: %s"), *FilePath);
         return false;
@@ -215,7 +213,7 @@ bool FBSGuardCrypto::Decrypt(const TArray<uint8>& InCipher, TArray<uint8>& OutPl
     const int32  DataLen = InCipher.Num() - MinSize;
 
     const TArray<uint8>& SharedKey = FBSLicenseUtils::GetSharedKey();
-    if (SharedKey.Num() != 32)
+    if (SharedKey.Num() != 64)
     {
         return false;
     }
@@ -230,6 +228,12 @@ bool FBSGuardCrypto::Decrypt(const TArray<uint8>& InCipher, TArray<uint8>& OutPl
 
     int32 PlainLen = 0;
     int32 TmpLen   = 0;
+    bool b1 = EVP_DecryptInit_ex(Ctx, EVP_aes_256_gcm(), nullptr, nullptr, nullptr) == 1;
+    bool b2 = EVP_CIPHER_CTX_ctrl (Ctx, EVP_CTRL_GCM_SET_IVLEN, BSGE::GcmNonceSize, nullptr) == 1;
+    bool b3 = EVP_DecryptInit_ex(Ctx, nullptr, nullptr, SharedKey.GetData(), IV)          == 1;
+    bool b4 = EVP_DecryptUpdate (Ctx, OutPlain.GetData(), &PlainLen, Data, DataLen) == 1;
+    bool b5 = EVP_CIPHER_CTX_ctrl (Ctx, EVP_CTRL_GCM_SET_TAG, BSGE::GcmTagSize, (void*)Tag)  == 1;
+    bool b6 = EVP_DecryptFinal_ex (Ctx, OutPlain.GetData() + PlainLen, &TmpLen)     == 1;
     bool bOK =
         EVP_DecryptInit_ex(Ctx, EVP_aes_256_gcm(), nullptr, nullptr, nullptr) == 1 &&
         EVP_CIPHER_CTX_ctrl (Ctx, EVP_CTRL_GCM_SET_IVLEN, BSGE::GcmNonceSize, nullptr) == 1 &&

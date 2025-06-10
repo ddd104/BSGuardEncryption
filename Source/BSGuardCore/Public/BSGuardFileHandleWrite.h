@@ -35,5 +35,6 @@ private:
     EVP_CIPHER_CTX* Ctx;
     TArray<uint8> IV;
     TArray<uint8> EncryptedBuffer;
+    int64 TagOffset;
     bool bError;
 };
