@@ -139,8 +139,8 @@ bool FBSGuardCrypto::Encrypt(const TArray<uint8>& InPlain, TArray<uint8>& OutCip
     }
 
     /* 1. 生成 12-byte Nonce */
-    uint8 IV[BSGE::GcmNonceSize];
-    if (!GenRandomBytes(IV, BSGE::GcmNonceSize))
+    uint8 Nonce[BSGE::GcmNonceSize];
+    if (!GenRandomBytes(Nonce, BSGE::GcmNonceSize))
     {
         return false;
     }
@@ -161,7 +161,7 @@ bool FBSGuardCrypto::Encrypt(const TArray<uint8>& InPlain, TArray<uint8>& OutCip
     bool bOK =
         EVP_EncryptInit_ex(Ctx, EVP_aes_256_gcm(), nullptr, nullptr, nullptr) == 1 &&
         EVP_CIPHER_CTX_ctrl (Ctx, EVP_CTRL_GCM_SET_IVLEN, BSGE::GcmNonceSize, nullptr) == 1 &&
-        EVP_EncryptInit_ex(Ctx, nullptr, nullptr, SharedKey.GetData(), IV)          == 1 &&
+        EVP_EncryptInit_ex(Ctx, nullptr, nullptr, SharedKey.GetData(), Nonce)          == 1 &&
         EVP_EncryptUpdate (Ctx, CipherText.GetData(), &CipherLen,
                            InPlain.GetData(), PlainLen)                       == 1 &&
         EVP_EncryptFinal_ex(Ctx, CipherText.GetData() + CipherLen, &TmpLen)   == 1;
@@ -180,11 +180,13 @@ bool FBSGuardCrypto::Encrypt(const TArray<uint8>& InPlain, TArray<uint8>& OutCip
         UE_LOG(LogTemp, Error, TEXT("Encrypt failed")); return false;
     }
 
-    /* 3. 组包：Magic|Ver|Nonce|Tag|Cipher */
+    /* 组包：Magic|CEState|TEState|Ver|Nonce|Tag|Cipher */
     OutCipher.Reset();
     OutCipher.Append(BSGE::CryptoMagic, 4);
-    OutCipher.Add   (BSGE::CryptoVersion);
-    OutCipher.Append(IV, BSGE::GcmNonceSize);
+    OutCipher.Add(1);
+    OutCipher.Add(1);
+    OutCipher.Add(BSGE::CryptoVersion);
+    OutCipher.Append(Nonce, BSGE::GcmNonceSize);
     OutCipher.Append(Tag, BSGE::GcmTagSize);
     OutCipher.Append(CipherText.GetData(), CipherLen);
     return true;
@@ -193,7 +195,7 @@ bool FBSGuardCrypto::Encrypt(const TArray<uint8>& InPlain, TArray<uint8>& OutCip
 // 使用OpenSSL EVP接口实现AES-256-GCM解密
 bool FBSGuardCrypto::Decrypt(const TArray<uint8>& InCipher, TArray<uint8>& OutPlain)
 {
-    const int32 MinSize = 4 + 1 + BSGE::GcmNonceSize + BSGE::GcmTagSize;
+    const int32 MinSize = 2 + 4 + 1 + BSGE::GcmNonceSize + BSGE::GcmTagSize;
     if (InCipher.Num() < MinSize)
     {
         return false;
@@ -206,10 +208,11 @@ bool FBSGuardCrypto::Decrypt(const TArray<uint8>& InCipher, TArray<uint8>& OutPl
     {
         UE_LOG(LogTemp, Error, TEXT("Version mismatch")); return false;
     }
-
-    const uint8* IV    = InCipher.GetData() + 5;
-    const uint8* Tag   = IV + BSGE::GcmNonceSize;
-    const uint8* Data  = Tag + BSGE::GcmTagSize;
+    const uint8* CEState = InCipher.GetData() + 5;
+    const uint8* CTState = CEState + 1;
+    const uint8* IV    = CTState + 1;
+    const uint8* Nonce   = IV + BSGE::GcmNonceSize;
+    const uint8* Tag  = Nonce + BSGE::GcmTagSize;
     const int32  DataLen = InCipher.Num() - MinSize;
 
     const TArray<uint8>& SharedKey = FBSLicenseUtils::GetSharedKey();
@@ -231,15 +234,15 @@ bool FBSGuardCrypto::Decrypt(const TArray<uint8>& InCipher, TArray<uint8>& OutPl
     bool b1 = EVP_DecryptInit_ex(Ctx, EVP_aes_256_gcm(), nullptr, nullptr, nullptr) == 1;
     bool b2 = EVP_CIPHER_CTX_ctrl (Ctx, EVP_CTRL_GCM_SET_IVLEN, BSGE::GcmNonceSize, nullptr) == 1;
     bool b3 = EVP_DecryptInit_ex(Ctx, nullptr, nullptr, SharedKey.GetData(), IV)          == 1;
-    bool b4 = EVP_DecryptUpdate (Ctx, OutPlain.GetData(), &PlainLen, Data, DataLen) == 1;
-    bool b5 = EVP_CIPHER_CTX_ctrl (Ctx, EVP_CTRL_GCM_SET_TAG, BSGE::GcmTagSize, (void*)Tag)  == 1;
+    bool b4 = EVP_DecryptUpdate (Ctx, OutPlain.GetData(), &PlainLen, Tag, DataLen) == 1;
+    bool b5 = EVP_CIPHER_CTX_ctrl (Ctx, EVP_CTRL_GCM_SET_TAG, BSGE::GcmTagSize, (void*)Nonce)  == 1;
     bool b6 = EVP_DecryptFinal_ex (Ctx, OutPlain.GetData() + PlainLen, &TmpLen)     == 1;
     bool bOK =
         EVP_DecryptInit_ex(Ctx, EVP_aes_256_gcm(), nullptr, nullptr, nullptr) == 1 &&
         EVP_CIPHER_CTX_ctrl (Ctx, EVP_CTRL_GCM_SET_IVLEN, BSGE::GcmNonceSize, nullptr) == 1 &&
         EVP_DecryptInit_ex(Ctx, nullptr, nullptr, SharedKey.GetData(), IV)          == 1 &&
-        EVP_DecryptUpdate (Ctx, OutPlain.GetData(), &PlainLen, Data, DataLen) == 1 &&
-        EVP_CIPHER_CTX_ctrl (Ctx, EVP_CTRL_GCM_SET_TAG, BSGE::GcmTagSize, (void*)Tag)  == 1 &&
+        EVP_DecryptUpdate (Ctx, OutPlain.GetData(), &PlainLen, Tag, DataLen) == 1 &&
+        EVP_CIPHER_CTX_ctrl (Ctx, EVP_CTRL_GCM_SET_TAG, BSGE::GcmTagSize, (void*)Nonce)  == 1 &&
         EVP_DecryptFinal_ex (Ctx, OutPlain.GetData() + PlainLen, &TmpLen)     == 1;
 
     EVP_CIPHER_CTX_free(Ctx);

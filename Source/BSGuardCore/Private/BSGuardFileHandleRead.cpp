@@ -5,17 +5,18 @@
 
 FBSGuardPlatformFile::FBSGuardFileHandleRead::FBSGuardFileHandleRead(IFileHandle* InHandle):InnerHandle(InHandle)
 {
-	// 获取文件大小以便读取全部内容
 	TotalSize = InnerHandle->Size();
-	// 读取整个文件密文到内存并解密（因为AES-GCM需要整体验证Tag）
 	EncryptedData.SetNumUninitialized(TotalSize);
+	InnerHandle->Seek(4);
+	CEState = InnerHandle->Read(EncryptedData.GetData(), 1);
+	InnerHandle->Seek(5);
+	CTState = InnerHandle->Read(EncryptedData.GetData(), 1);
 	InnerHandle->Seek(0);
 	InnerHandle->Read(EncryptedData.GetData(), TotalSize);
 	// 解析头、IV、Tag并进行解密
 	if (EncryptedData.Num() >= 4 && FMemory::Memcmp(EncryptedData.GetData(), BSGE::CryptoMagic, 4) == 0)
 	{
 		TArray<uint8> PlainData;
-		bool bValidKey = FBSGuardCrypto::HasValidKey();
 		if (FBSGuardCrypto::Decrypt(EncryptedData, PlainData))
 		{
 			DecryptedData = MoveTemp(PlainData);

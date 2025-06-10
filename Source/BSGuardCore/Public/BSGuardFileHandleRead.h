@@ -31,4 +31,7 @@ private:
     TArray<uint8> DecryptedData;
     int64 TotalSize;
     int64 ReadPos;
+
+    uint8 CEState;
+    uint8 CTState;
 };
