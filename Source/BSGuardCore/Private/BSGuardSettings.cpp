@@ -43,8 +43,7 @@ bool UBSGuardSettings::ValidateAndSetKey()
 		UE_LOG(LogTemp, Error, TEXT("Failed to derive encryption key from public key."));
 		return false;
 	}
-
-	// 如存在 License 文件，仅用于校验过期等信息
+	
 	LicenseFilePath = GetLicenseFilePath();
 	if (!LicenseFilePath.IsEmpty())
 	{
@@ -62,7 +61,9 @@ bool UBSGuardSettings::ValidateAndSetKey()
 					}
 					else
 					{
+						bKeyIsValid = true;
 						KeyExpiration = LicData.ExpireDate;
+						return true;
 					}
 				}
 			}
@@ -70,9 +71,7 @@ bool UBSGuardSettings::ValidateAndSetKey()
 		}
 	}
 
-	// 密钥通过验证，保存到内存
-	bKeyIsValid = true;
-	return true;
+	return false;
 }
 
 const TArray<uint8>& UBSGuardSettings::GetKeyBytes() const

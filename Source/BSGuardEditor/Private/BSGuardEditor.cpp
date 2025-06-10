@@ -25,10 +25,13 @@ void FBSGuardEditorModule::StartupModule()
 	FSlateStyleRegistry::RegisterSlateStyle(*StyleSet);
 	
 	// 注册内容浏览器菜单扩展
-	FContentBrowserModule& ContentBrowserModule = FModuleManager::LoadModuleChecked<FContentBrowserModule>("ContentBrowser");
-	TArray<FContentBrowserMenuExtender_SelectedAssets>& CBMenuExtenderDelegates = ContentBrowserModule.GetAllAssetViewContextMenuExtenders();
-	CBMenuExtenderDelegates.Add(FContentBrowserMenuExtender_SelectedAssets::CreateStatic(&FBSGuardEditorModule::OnExtendContentBrowserAssetMenu));
-
+	bool ValidKey = FBSGuardCrypto::HasValidKey();
+	if (ValidKey)
+	{
+		FContentBrowserModule& ContentBrowserModule = FModuleManager::LoadModuleChecked<FContentBrowserModule>("ContentBrowser");
+		TArray<FContentBrowserMenuExtender_SelectedAssets>& CBMenuExtenderDelegates = ContentBrowserModule.GetAllAssetViewContextMenuExtenders();
+		CBMenuExtenderDelegates.Add(FContentBrowserMenuExtender_SelectedAssets::CreateStatic(&FBSGuardEditorModule::OnExtendContentBrowserAssetMenu));
+	}
 	// 注册保存包事件，以在资产保存后自动加密
 	UPackage::PackageSavedWithContextEvent.AddStatic([](const FString& PackageFileName, UPackage* Package, FObjectPostSaveContext Context)
 	{
@@ -42,16 +45,6 @@ void FBSGuardEditorModule::StartupModule()
 			}
 		}
 	});
-
-	// TODO: 可在此注册项目设置面板 (通过ISettingsModule) 以提供密钥输入UI。
-	// 例如:
-	// ISettingsModule* SettingsModule = FModuleManager::GetModulePtr<ISettingsModule>("Settings");
-	// if (SettingsModule) {
-	//     SettingsModule->RegisterSettings("Project", "Plugins", "GuardEncryption",
-	//         LOCTEXT("GuardSettingsName", "Guard Encryption"),
-	//         LOCTEXT("GuardSettingsDescription", "Configure GuardEncryption Plugin"),
-	//         GetMutableDefault<UGuardSettings>());
-	// }
 }
 
 void FBSGuardEditorModule::ShutdownModule()
@@ -99,13 +92,10 @@ void FBSGuardEditorModule::CreateAssetContextMenu(FMenuBuilder& MenuBuilder, con
 				FCanExecuteAction::CreateLambda([AssetFilePath]()
 				{
 					// 仅当密钥有效时允许解密
-					return FBSGuardCrypto::HasValidKey();
+					return FBSGuardCrypto::IsEncryptedAssetFile(AssetFilePath);
 				})
 			)
 		);
-		// 如有需要，禁用导出等操作
-		// （例如可以在Extender添加前移除Export菜单，此处简化为注释）
-		// MenuBuilder.RemoveMenuEntry(FName("ExportAsset"));  // 假设可以通过名称移除
 	}
 	else
 	{
@@ -122,7 +112,7 @@ void FBSGuardEditorModule::CreateAssetContextMenu(FMenuBuilder& MenuBuilder, con
 				FCanExecuteAction::CreateLambda([AssetFilePath]()
 				{
 						// 需要有有效密钥，且文件未加密
-						return FBSGuardCrypto::HasValidKey() && !FBSGuardCrypto::IsEncryptedAssetFile(AssetFilePath);
+						return !FBSGuardCrypto::IsEncryptedAssetFile(AssetFilePath);
 				})
 			)
 		);
