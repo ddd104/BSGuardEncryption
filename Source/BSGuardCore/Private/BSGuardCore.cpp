@@ -31,7 +31,7 @@ struct FNTAG_EarlyInstaller
 	}
 };  
 
-static FNTAG_EarlyInstaller GNTAG_PlatformFileAutoInstaller;
+
 
 void FBSGuardCoreModule::StartupModule()
 {
@@ -49,6 +49,8 @@ void FBSGuardCoreModule::StartupModule()
 		}
 	}
 	
+	static FNTAG_EarlyInstaller GNTAG_PlatformFileAutoInstaller;
+
 }
 
 void FBSGuardCoreModule::ShutdownModule()

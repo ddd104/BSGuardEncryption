@@ -13,13 +13,14 @@
 	"CanContainContent": true,
 	"IsBetaVersion": false,
 	"IsExperimentalVersion": false,
-	"Installed": false,
+	"Installed": true,
 	"Modules": [
 		{
 			"Name": "BSGuardCore",
 			"Type": "Runtime",
 			"LoadingPhase": "PreEarlyLoadingScreen",
-			"PreloadDependencies": ["AssetRegistry"]
+			"PreloadDependencies": [ "AssetRegistry" ],
+			"WhitelistTargets": [ "Editor", "Game", "Program" ]
 		},
 		{
 			"Name": "BSGuardEditor",

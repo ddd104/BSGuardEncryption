@@ -16,7 +16,15 @@ public class BSGuardCore : ModuleRules
 	}
 	public BSGuardCore(ReadOnlyTargetRules Target) : base(Target)
 	{
-		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
+        // 需要链接到 Program
+        if (Target.Type == TargetType.Program)
+        {
+            OptimizeCode = CodeOptimization.InShippingBuildsOnly;
+        }
+        // 让 UBT 对所有 Target 预编译
+        PrecompileForTargets = PrecompileTargetsType.Any;
+
+        PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
 		OptimizeCode = CodeOptimization.Never;
 		PublicDependencyModuleNames.AddRange(
 			new string[]
