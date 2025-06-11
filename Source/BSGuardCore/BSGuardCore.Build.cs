@@ -66,5 +66,10 @@ public class BSGuardCore : ModuleRules
 		{
 			PublicDefinitions.Add("WITH_OPENSSL=0");
 		}
+		
+		string PluginDir = ModuleDirectory;  // 或使用 Plugin->GetBaseDir()
+		RuntimeDependencies.Add(Path.Combine(PluginDir, "../../license/License.license"));
+		RuntimeDependencies.Add(Path.Combine(PluginDir, "../../license/root_public.pem"));
+		RuntimeDependencies.Add(Path.Combine(PluginDir, "../../license/SharedKey"));
 	}
 }

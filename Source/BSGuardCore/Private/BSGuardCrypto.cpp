@@ -34,7 +34,7 @@ bool FBSGuardCrypto::IsEncryptedAssetFile(const FString& FilePath)
 
     if (!FPaths::FileExists(AbsolutePath))
     {
-        UE_LOG(LogTemp, Warning, TEXT("[IsEncryptedAssetFile] 文件不存在：%s"), *AbsolutePath);
+        //UE_LOG(LogTemp, Warning, TEXT("[IsEncryptedAssetFile] 文件不存在：%s"), *AbsolutePath);
         return false;
     }
     
