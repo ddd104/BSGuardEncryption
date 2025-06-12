@@ -2,6 +2,8 @@
 
 #include "BSGuardEditor.h"
 
+#include "AssetToolsModule.h"
+#include "AssetTypeActions_EncryptedAsset.h"
 #include "ContentBrowserModule.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
 #include "BSGuardCrypto.h"
@@ -33,6 +35,19 @@ void FBSGuardEditorModule::StartupModule()
 		TArray<FContentBrowserMenuExtender_SelectedAssets>& CBMenuExtenderDelegates = ContentBrowserModule.GetAllAssetViewContextMenuExtenders();
 		CBMenuExtenderDelegates.Add(FContentBrowserMenuExtender_SelectedAssets::CreateStatic(&FBSGuardEditorModule::OnExtendContentBrowserAssetMenu));
 	}
+
+	// 注册加密AssetTypeAction
+	TArray<TWeakPtr<IAssetTypeActions>> OutAssetTypeActionsList;
+	IAssetTools& AssetTools = FModuleManager::GetModuleChecked<FAssetToolsModule>("AssetTools").Get();
+	AssetTools.GetAssetTypeActionsList(OutAssetTypeActionsList);
+
+	for (auto& AssetTypeAction : OutAssetTypeActionsList)
+	{
+		TSharedPtr<FAssetTypeActions_EncryptedAsset> GuardAssetAction = MakeShareable(new FAssetTypeActions_EncryptedAsset(AssetTypeAction.Pin().ToSharedRef()));
+		AssetTools.RegisterAssetTypeActions(GuardAssetAction.ToSharedRef());
+	}
+
+	
 	// 注册保存包事件，以在资产保存后自动加密
 	UPackage::PackageSavedWithContextEvent.AddStatic([](const FString& PackageFileName, UPackage* Package, FObjectPostSaveContext Context)
 	{
