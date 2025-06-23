@@ -15,6 +15,11 @@
 #include "UObject/Package.h"
 #include "UObject/ObjectSaveContext.h"
 
+#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 6
+#include "UObject/SavePackage.h"
+#else
+#endif
+
 
 #define LOCTEXT_NAMESPACE "FBSGuardEditorModule"
 
@@ -52,6 +57,13 @@ void FBSGuardEditorModule::StartupModule()
 	UPackage::PackageSavedWithContextEvent.AddStatic([](const FString& PackageFileName, UPackage* Package, FObjectPostSaveContext Context)
 	{
 		const FName Key(TEXT("BSGE_EncryptTag"));
+#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 6
+		FMetaData MD = Package ? Package->GetMetaData() : FMetaData();
+		if (!MD.HasValue(Package, Key) || MD.HasValue(Package, TEXT("BSGE_ReadyToEncrypt")))
+		{
+			return; 
+		}
+#else
 		UMetaData* MD = Package ? Package->GetMetaData() : nullptr;
 		if (!MD || !MD->HasValue(Package, Key))
 		{
@@ -61,6 +73,8 @@ void FBSGuardEditorModule::StartupModule()
 		{
 			return;
 		}
+#endif
+		
 		// 当一个资产包保存成功后触发
 		if (FBSGuardCrypto::IsEncryptedAssetFile(PackageFileName) == false)
 		{
@@ -116,12 +130,19 @@ void FBSGuardEditorModule::CreateAssetContextMenu(FMenuBuilder& MenuBuilder, con
 					UPackage* Package = AssetData.GetPackage();
 					if (Package)
 					{
+#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 6
+						FMetaData MD = Package ? Package->GetMetaData() : FMetaData();
+						//MD->SetValue(Package, FName(TEXT("BSGE_EncryptTag")), TEXT("true"));
+						MD.RemoveValue(Package, FName(TEXT("BSGE_EncryptTag")));
+#else
 						UMetaData* MD = Package ? Package->GetMetaData() : nullptr;
 						if (MD)
 						{
 							//MD->SetValue(Package, FName(TEXT("BSGE_EncryptTag")), TEXT("true"));
 							MD->RemoveValue(Package, FName(TEXT("BSGE_EncryptTag")));
 						}
+#endif
+						
 					}
 					DecryptSelectedAsset(AssetData);
 				}),
@@ -146,12 +167,20 @@ void FBSGuardEditorModule::CreateAssetContextMenu(FMenuBuilder& MenuBuilder, con
 					UPackage* Package = AssetData.GetPackage();
 					if (Package)
 					{
+#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 6
+						FMetaData MD = Package ? Package->GetMetaData() : FMetaData();
+						MD.SetValue(Package, FName(TEXT("BSGE_EncryptTag")), TEXT("true"));
+						MD.SetValue(Package, FName(TEXT("BSGE_ReadyToEncrypt")), TEXT("true"));
+#else
 						UMetaData* MD = Package ? Package->GetMetaData() : nullptr;
 						if (MD)
 						{
 							MD->SetValue(Package, FName(TEXT("BSGE_EncryptTag")), TEXT("true"));
 							MD->SetValue(Package, FName(TEXT("BSGE_ReadyToEncrypt")), TEXT("true"));
 						}
+#endif
+						
+						
 					}
 					EncryptSelectedAsset(AssetData);
 				}),
@@ -182,13 +211,25 @@ void FBSGuardEditorModule::EncryptSelectedAsset(const FAssetData& AssetData)
 		Package->FullyLoad();
 		// 保存Package到磁盘，以更新.uasset文件
 		FString Error;
+#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 6
+		FSavePackageArgs SaveArgs;
+		UPackage::SavePackage(Package, AssetData.GetAsset(), *AssetFilePath, SaveArgs);
+#else
 		UPackage::SavePackage(Package, nullptr, RF_Public | RF_Standalone, *AssetFilePath, nullptr, nullptr, false, true, SAVE_NoError);
+#endif
 	}
+#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 6
+	FMetaData MD = Package ? Package->GetMetaData() : FMetaData();
+	MD.RemoveValue(Package, FName(TEXT("BSGE_ReadyToEncrypt")));
+#else
 	UMetaData* MD = Package ? Package->GetMetaData() : nullptr;
 	if (MD)
 	{
 		MD->RemoveValue(Package, FName(TEXT("BSGE_ReadyToEncrypt")));
 	}
+#endif
+	
+	
 	// 执行加密
 	if (FBSGuardCrypto::EncryptFile(AssetFilePath))
 	{
