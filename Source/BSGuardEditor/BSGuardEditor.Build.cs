@@ -1,11 +1,13 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
+using System.IO;
 using UnrealBuildTool;
 
 public class BSGuardEditor : ModuleRules
 {
 	public BSGuardEditor(ReadOnlyTargetRules Target) : base(Target)
 	{
+		PublicDependencyModuleNames.AddRange(new string[] { "ContentBrowserData" });
 		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
 		OptimizeCode = CodeOptimization.Never;
 		PrivateDependencyModuleNames.AddRange(
@@ -25,6 +27,9 @@ public class BSGuardEditor : ModuleRules
 				"BSGuardCore"
 			}
 			);
-
+		/*string EnginePath = Path.GetFullPath(Target.RelativeEnginePath);
+		PrivateIncludePaths.AddRange(new[] {
+			Path.Combine(EnginePath, "Source", "Editor", "ContentBrowser", "Private")
+		});*/
 	}
 }

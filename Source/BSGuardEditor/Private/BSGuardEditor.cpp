@@ -51,7 +51,7 @@ void FBSGuardEditorModule::StartupModule()
 		TSharedPtr<FAssetTypeActions_EncryptedAsset> GuardAssetAction = MakeShareable(new FAssetTypeActions_EncryptedAsset(AssetTypeAction.Pin().ToSharedRef()));
 		AssetTools.RegisterAssetTypeActions(GuardAssetAction.ToSharedRef());
 	}
-
+	
 	
 	// 注册保存包事件，以在资产保存后自动加密
 	UPackage::PackageSavedWithContextEvent.AddStatic([](const FString& PackageFileName, UPackage* Package, FObjectPostSaveContext Context)
@@ -299,6 +299,8 @@ void FBSGuardEditorModule::DecryptSelectedAsset(const FAssetData& AssetData)
 		FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("DecryptFailed", "解密资产失败，请检查密钥或日志。"));
 	}
 }
+
+
 
 #undef LOCTEXT_NAMESPACE
 	

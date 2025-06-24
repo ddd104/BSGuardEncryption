@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include "ContentBrowserDelegates.h"
+#include "ContentBrowserItem.h"
 #include "Modules/ModuleManager.h"
 
 class FBSGuardEditorModule : public IModuleInterface
@@ -19,4 +21,7 @@ private:
 	// 命令执行函数
 	static void EncryptSelectedAsset(const FAssetData& AssetData);
 	static void DecryptSelectedAsset(const FAssetData& AssetData);
+
+
+
 };
