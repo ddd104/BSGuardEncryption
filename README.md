@@ -25,7 +25,7 @@
 
 ## 快速开始
 
-读取SharedKey.md
+读取README.md
 
 ## 用户配置
 lisence相关的配置都放在 BSGuardEncryption\license 文件夹
@@ -83,3 +83,15 @@ This Unreal Engine plugin transparently encrypts asset files using AES-256-GCM. 
 * Expired licenses will be rejected; provide a new license or key string to continue using encrypted content.
 ## Build
 The plugin depends on OpenSSL which is included with Unreal Engine. Add the plugin to your `Plugins` directory and regenerate project files before compiling.
+
+
+
+# 模块
+## BSGuardCore
+加密和解密实现的主要逻辑模块，FBSGuardFileHandleRead 和 FBSGuardFileHandleWrite 是继承自 IFileHandle 的，主要是用于重写在蓝图资产读取和写入资产。FBSGuardPlatformFile用于自定义平台文件，用于拦截资产文件读写，实现透明加解密。
+
+## BSGuardEditor
+BSGuardEditor 模块是该插件的编辑器模块，在模块的 StartupModule 注册各种内容浏览器的代理。
+
+## BSContentCommand
+该模块是用于重写覆盖引擎自带的内容浏览器的按键操作，比如包括Ctrl + C 和 Ctrl + V 等等，对按键等复制操作制造拦截。
