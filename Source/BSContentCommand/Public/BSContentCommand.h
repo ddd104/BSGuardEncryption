@@ -19,6 +19,9 @@ public:
 	/** 执行+过滤逻辑 */
 	void ExecuteGuardedCopy(const TArray<FContentBrowserItem>& SelectedItems) const;
 	bool CanExecuteGuardedCopy(const TArray<FContentBrowserItem>& SelectedItems) const;
+
+	void OnInitialize(TSharedPtr<SWindow> InRootWindow, bool bIsRunningStartupDialog);
 	/** 保存返回的句柄，Shutdown 时要解绑 */
 	FContentBrowserCommandExtender CommandExtenderHandle;
+	FDelegateHandle MainFrameDelegateHandle;
 };

@@ -9,6 +9,7 @@
 #include "BSGuardCrypto.h"
 #include "IContentBrowserSingleton.h"
 #include "AssetRegistry/AssetData.h"
+#include "AssetRegistry/AssetRegistryModule.h"
 #include "Interfaces/IPluginManager.h"
 #include "Misc/MessageDialog.h"
 #include "Styling/SlateStyleRegistry.h"
@@ -56,7 +57,9 @@ void FBSGuardEditorModule::StartupModule()
 	// 注册保存包事件，以在资产保存后自动加密
 	UPackage::PackageSavedWithContextEvent.AddStatic([](const FString& PackageFileName, UPackage* Package, FObjectPostSaveContext Context)
 	{
+		
 		const FName Key(TEXT("BSGE_EncryptTag"));
+		const FName ReadyKey(TEXT("BSGE_ReadyToEncrypt"));
 #if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 6
 		FMetaData MD = Package ? Package->GetMetaData() : FMetaData();
 		if (!MD.HasValue(Package, Key) || MD.HasValue(Package, TEXT("BSGE_ReadyToEncrypt")))
@@ -64,12 +67,27 @@ void FBSGuardEditorModule::StartupModule()
 			return; 
 		}
 #else
-		UMetaData* MD = Package ? Package->GetMetaData() : nullptr;
-		if (!MD || !MD->HasValue(Package, Key))
+		UMetaData* Meta = Package ? Package->GetMetaData() : nullptr;
+		if (!Meta) { return; }
+		bool bNeedEncrypt = false;
+		UObject* MainAsset = Package->FindAssetInPackage();
+		TArray<UObject*> Objects;
+		GetObjectsWithPackage(Package, Objects, /*bIncludeNested=*/false);
+		for (UObject* Obj : Objects)
 		{
-			return; 
+#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION >= 6
+			if ( Meta.HasValue(Obj, EncryptKey) && !Meta.HasValue(Obj, ReadyKey) )
+#else
+			bool bHasKey = Meta->HasValue(Obj, Key);
+			bool bHasReadyKey = Meta->HasValue(Obj, ReadyKey);
+			if (bHasKey && !bHasReadyKey)
+#endif
+			{
+				bNeedEncrypt = true;
+				break;
+			}
 		}
-		if (MD->HasValue(Package, TEXT("BSGE_ReadyToEncrypt")))
+		if (!bNeedEncrypt)
 		{
 			return;
 		}
@@ -111,13 +129,27 @@ TSharedRef<FExtender> FBSGuardEditorModule::OnExtendContentBrowserAssetMenu(cons
 void FBSGuardEditorModule::CreateAssetContextMenu(FMenuBuilder& MenuBuilder, const TArray<FAssetData> SelectedAssets)
 {
 	if (SelectedAssets.Num() == 0) return;
-	const FAssetData& AssetData = SelectedAssets[0];
-	FString AssetFilePath = AssetData.PackageName.ToString();
-	AssetFilePath = FPackageName::LongPackageNameToFilename(AssetFilePath, FPackageName::GetAssetPackageExtension());
-
-	// 检查该资产文件是否已加密
-	bool bIsEncrypted = FBSGuardCrypto::IsEncryptedAssetFile(AssetFilePath);
-	if (bIsEncrypted)
+	bool HasEncryptionButton = false;
+	bool HasDecryptButton = false;
+	TArray<FAssetData> NeedEncryptionFiles;
+	TArray<FAssetData> NeedDecryptFiles;
+	for (const FAssetData& AssetData : SelectedAssets)
+	{
+		FString AssetFilePath = AssetData.PackageName.ToString();
+		AssetFilePath = FPackageName::LongPackageNameToFilename(AssetFilePath, FPackageName::GetAssetPackageExtension());
+		// 检查该资产文件是否已加密
+		if (FBSGuardCrypto::IsEncryptedAssetFile(AssetFilePath))
+		{
+			NeedDecryptFiles.Add(AssetData);
+			HasDecryptButton = true;
+		}
+		else
+		{
+			NeedEncryptionFiles.Add(AssetData);
+			HasEncryptionButton = true;
+		}
+	}
+	if (HasDecryptButton)
 	{
 		// **解密** 菜单项
 		MenuBuilder.AddMenuEntry(
@@ -125,36 +157,33 @@ void FBSGuardEditorModule::CreateAssetContextMenu(FMenuBuilder& MenuBuilder, con
 			LOCTEXT("DecryptAssetTooltip", "使用当前密钥解密此资产文件"),
 			FSlateIcon(FAppStyle::GetAppStyleSetName(), "Icons.Unlock"),  // 假设使用一个解锁图标
 			FUIAction(
-				FExecuteAction::CreateLambda([AssetData]()
+				FExecuteAction::CreateLambda([NeedDecryptFiles]()
 				{
-					UPackage* Package = AssetData.GetPackage();
-					if (Package)
+					for (const FAssetData& AssetData : NeedDecryptFiles)
 					{
-#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 6
-						FMetaData MD = Package ? Package->GetMetaData() : FMetaData();
-						//MD->SetValue(Package, FName(TEXT("BSGE_EncryptTag")), TEXT("true"));
-						MD.RemoveValue(Package, FName(TEXT("BSGE_EncryptTag")));
-#else
-						UMetaData* MD = Package ? Package->GetMetaData() : nullptr;
-						if (MD)
+						UPackage* Package = AssetData.GetPackage();
+						if (Package)
 						{
-							//MD->SetValue(Package, FName(TEXT("BSGE_EncryptTag")), TEXT("true"));
-							MD->RemoveValue(Package, FName(TEXT("BSGE_EncryptTag")));
+							UMetaData* MD = Package ? Package->GetMetaData() : nullptr;
+							if (MD)
+							{
+								//MD->SetValue(Package, FName(TEXT("BSGE_EncryptTag")), TEXT("true"));
+								MD->RemoveValue(Package, FName(TEXT("BSGE_EncryptTag")));
+							}
 						}
-#endif
-						
+						DecryptSelectedAsset(AssetData);
 					}
-					DecryptSelectedAsset(AssetData);
+					
 				}),
-				FCanExecuteAction::CreateLambda([AssetFilePath]()
+				FCanExecuteAction::CreateLambda([]()
 				{
 					// 仅当密钥有效时允许解密
-					return FBSGuardCrypto::IsEncryptedAssetFile(AssetFilePath);
+					return FBSGuardCrypto::HasValidKey();
 				})
 			)
 		);
 	}
-	else
+	if (HasEncryptionButton)
 	{
 		// **加密** 菜单项
 		MenuBuilder.AddMenuEntry(
@@ -162,32 +191,31 @@ void FBSGuardEditorModule::CreateAssetContextMenu(FMenuBuilder& MenuBuilder, con
 			LOCTEXT("EncryptAssetTooltip", "使用当前密钥加密此资产文件"),
 			FSlateIcon(FAppStyle::GetAppStyleSetName(), "Icons.Lock"),  // 假设使用一个锁图标
 			FUIAction(
-				FExecuteAction::CreateLambda([AssetData]()
+				FExecuteAction::CreateLambda([NeedEncryptionFiles]()
 				{
-					UPackage* Package = AssetData.GetPackage();
-					if (Package)
+					for (const FAssetData& AssetData : NeedEncryptionFiles)
 					{
-#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 6
-						FMetaData MD = Package ? Package->GetMetaData() : FMetaData();
-						MD.SetValue(Package, FName(TEXT("BSGE_EncryptTag")), TEXT("true"));
-						MD.SetValue(Package, FName(TEXT("BSGE_ReadyToEncrypt")), TEXT("true"));
-#else
-						UMetaData* MD = Package ? Package->GetMetaData() : nullptr;
-						if (MD)
+						UObject* AssetObj = AssetData.GetAsset();
+						UPackage* Package = AssetObj->GetPackage();
+						UMetaData* Meta = Package ? Package->GetMetaData() : nullptr;
+						if (AssetObj)
 						{
-							MD->SetValue(Package, FName(TEXT("BSGE_EncryptTag")), TEXT("true"));
-							MD->SetValue(Package, FName(TEXT("BSGE_ReadyToEncrypt")), TEXT("true"));
+							if (Meta)
+							{
+								Meta->SetValue(AssetObj, FName(TEXT("BSGE_EncryptTag")), TEXT("true"));
+								Meta->SetValue(AssetObj, FName(TEXT("BSGE_ReadyToEncrypt")), TEXT("true"));
+
+								Package->MarkPackageDirty();                // 必须！否则保存时不会写盘
+								FAssetRegistryModule::AssetRenamed(AssetObj, Package->GetName());
+							}
 						}
-#endif
-						
-						
+						EncryptSelectedAsset(AssetData);
 					}
-					EncryptSelectedAsset(AssetData);
 				}),
-				FCanExecuteAction::CreateLambda([AssetFilePath]()
+				FCanExecuteAction::CreateLambda([]()
 				{
 						// 需要有有效密钥，且文件未加密
-						return !FBSGuardCrypto::IsEncryptedAssetFile(AssetFilePath);
+						return FBSGuardCrypto::HasValidKey();
 				})
 			)
 		);

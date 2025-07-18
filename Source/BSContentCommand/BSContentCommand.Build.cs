@@ -18,7 +18,8 @@ public class BSContentCommand : ModuleRules
 				"Projects",
 				"Slate",
 				"SlateCore",
-				"BSGuardCore"
+				"BSGuardCore",
+				"StatusBar"
 			}
 			);
 
