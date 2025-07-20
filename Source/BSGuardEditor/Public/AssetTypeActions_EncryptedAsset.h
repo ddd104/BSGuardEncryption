@@ -6,9 +6,6 @@ class FAssetTypeActions_EncryptedAsset : public FAssetTypeActions_Base
 public:
 	FAssetTypeActions_EncryptedAsset(const TSharedRef<IAssetTypeActions>& InInner);
 
-	/** —— 关键拦截点 —— */
-	virtual void OpenAssetEditor(const TArray<UObject*>& InObjects, TSharedPtr<IToolkitHost> Host) override;
-
 public:
 	virtual ~FAssetTypeActions_EncryptedAsset() override;
 
@@ -22,7 +19,7 @@ public:
 
 	virtual void OpenAssetEditor(const TArray<UObject*>& InObjects, const EAssetTypeActivationOpenedMethod OpenedMethod,
 	                             TSharedPtr<IToolkitHost> EditWithinLevelEditor = TSharedPtr<IToolkitHost>()) override;
-
+	virtual void OpenAssetEditor(const TArray<UObject*>& InObjects, TSharedPtr<IToolkitHost> Host) override;
 	virtual bool CanRename(const FAssetData& InAsset, FText* OutErrorMsg) const override;
 
 	virtual bool CanDuplicate(const FAssetData& InAsset, FText* OutErrorMsg) const override;

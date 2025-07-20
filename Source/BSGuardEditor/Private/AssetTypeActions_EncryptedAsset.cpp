@@ -1,6 +1,7 @@
 ﻿#include "AssetTypeActions_EncryptedAsset.h"
 
 #include "BSGuardCrypto.h"
+#include "EncryptVersion.h"
 #include "Styling/SlateStyleRegistry.h"
 
 TSharedPtr<class SWidget> FAssetTypeActions_EncryptedAsset::GetThumbnailOverlay(const FAssetData& AssetData) const
@@ -20,6 +21,7 @@ FAssetTypeActions_EncryptedAsset::FAssetTypeActions_EncryptedAsset(const TShared
 
 void FAssetTypeActions_EncryptedAsset::OpenAssetEditor(const TArray<UObject*>& InObjects, TSharedPtr<IToolkitHost> Host)
 {
+
 	Inner->OpenAssetEditor(InObjects, Host);
 }
 
@@ -55,7 +57,47 @@ bool FAssetTypeActions_EncryptedAsset::ShouldCallGetActions() const
 void FAssetTypeActions_EncryptedAsset::OpenAssetEditor(const TArray<UObject*>& InObjects,
 	const EAssetTypeActivationOpenedMethod OpenedMethod, TSharedPtr<IToolkitHost> EditWithinLevelEditor)
 {
-	Inner->OpenAssetEditor(InObjects, OpenedMethod, EditWithinLevelEditor);
+	UE_LOG(LogTemp, Display, TEXT("FAssetTypeActions_EncryptedAsset::OpenAssetEditor"));
+	TArray<UObject*> MakeOpenObjects;
+	for (UObject* Asset : InObjects)
+	{
+		FString AssetPath = FPackageName::LongPackageNameToFilename(Asset->GetPackage()->GetName(), FPackageName::GetAssetPackageExtension());
+        
+		FILE* File = nullptr;
+		fopen_s(&File, TCHAR_TO_ANSI(*AssetPath), "rb");
+
+		if (!File)
+		{
+			if (!BSGEncrypt::IsObjectEncrypted(Asset))
+			{
+				MakeOpenObjects.Add(Asset);
+			}
+			else
+			{
+				if (IsOpenAllowed())
+				{
+					MakeOpenObjects.Add(Asset);
+				}
+			}
+			continue;
+		}
+		char Magic[4];
+		fread(Magic, 1, 4, File);
+		fclose(File);
+
+		const bool bIsEncrypted = FMemory::Memcmp(Magic, "BSGE", 4) == 0;
+		if (!bIsEncrypted)
+		{
+			MakeOpenObjects.Add(Asset);
+			continue;
+		}
+		if (IsOpenAllowed())
+		{
+			//FMessageDialog::Open(EAppMsgType::Ok, FText::FromString("Failed to pass verification, refused to open this asset."));
+			MakeOpenObjects.Add(Asset);
+		}
+	}
+	Inner->OpenAssetEditor(MakeOpenObjects, OpenedMethod, EditWithinLevelEditor);
 }
 
 bool FAssetTypeActions_EncryptedAsset::CanRename(const FAssetData& InAsset, FText* OutErrorMsg) const
@@ -219,5 +261,5 @@ FTopLevelAssetPath FAssetTypeActions_EncryptedAsset::GetClassPathName() const
 
 bool FAssetTypeActions_EncryptedAsset::IsOpenAllowed() const
 {
-	return true;
+	return FBSGuardCrypto::HasValidKey();
 }
