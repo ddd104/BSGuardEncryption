@@ -13,9 +13,6 @@ public:
 	virtual void ShutdownModule() override;
 
 
-	static IPlatformFile* Base;
-	static IPlatformFile* OriginalPlatformFile;
-	static TUniquePtr<class FBSGuardPlatformFile> GuardPlatformFile;
-private:
-	TSharedPtr<class FBSGuardSettings> BSGuardSettings;
+	
+
 };
