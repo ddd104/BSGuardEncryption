@@ -60,11 +60,6 @@ bool FBSGuardCrypto::IsEncryptedAssetFile(const FString& FilePath)
 
 bool FBSGuardCrypto::EncryptFile(const FString& FilePath)
 {
-    if (!bKeyIsSet)
-    {
-        UE_LOG(LogTemp, Error, TEXT("Cannot encrypt file %s: Key not set."), *FilePath);
-        return false;
-    }
     // 读取原文件完整数据
     TArray<uint8> PlainData;
     if (!FFileHelper::LoadFileToArray(PlainData, *FilePath))
@@ -98,7 +93,7 @@ bool FBSGuardCrypto::EncryptFile(const FString& FilePath)
     return true;
 }
 
-bool FBSGuardCrypto::DecryptFile(const FString& FilePath, const FAssetData& AssetData)
+bool FBSGuardCrypto::DecryptFile(const FString& FilePath)
 {
     if (!bKeyIsSet)
     {
@@ -112,22 +107,7 @@ bool FBSGuardCrypto::DecryptFile(const FString& FilePath, const FAssetData& Asse
         UE_LOG(LogTemp, Error, TEXT("Failed to read encrypted file: %s"), *FilePath);
         return false;
     }
-    /*
-    // 提取并验证魔数
-    if (FMemory::Memcmp(FileData.GetData(), BSGE::CryptoMagic, 4) != 0)
-    {
-        UE_LOG(LogTemp, Error, TEXT("File %s is not recognized as encrypted (magic mismatch)."), *FilePath);
-        return false;
-    }
-    
-    // 解密
-    TArray<uint8> PlainData;
-    if (!Decrypt(FileData, PlainData))
-    {
-        UE_LOG(LogTemp, Error, TEXT("Decryption failed or authentication tag mismatch for file: %s"), *FilePath);
-        return false;
-    }
-    */
+	
     // 解密成功，写回明文文件数据，直接使用底层平台文件以避免被加密
     IPlatformFile& PlatFile = FPlatformFileManager::Get().GetPlatformFile();
     IPlatformFile* RawFile = PlatFile.GetLowerLevel();
@@ -276,4 +256,92 @@ bool FBSGuardCrypto::Decrypt(const TArray<uint8>& InCipher, TArray<uint8>& OutPl
 bool FBSGuardCrypto::GenRandomBytes(uint8* Out, int32 Num)
 {
     return RAND_bytes(Out, Num) == 1;
+}
+
+
+struct FBSGEncryptVersion
+{
+	enum class EBSGEncryptVer : int32
+	{
+		Plain      = 0,
+		Encrypted  = 1,
+		VersionPlusOne,
+		LatestVersion = VersionPlusOne - 1
+	};
+	
+	static const FGuid GUID;
+};
+
+const FGuid FBSGEncryptVersion::GUID(0x6E4DE065, 0x1F87468C, 0xA5F1E4D3, 0xDC97B2E9);
+static FCustomVersionRegistration GBSGEncryptVer(
+	FBSGEncryptVersion::GUID,
+	(int32)FBSGEncryptVersion::EBSGEncryptVer::LatestVersion,
+	TEXT("BSGE_EncryptTag"));
+
+namespace BSGEncrypt
+{
+	void MarkPackageEncrypted(UPackage* Pkg)
+	{
+		if (!Pkg) return;
+
+
+		UObject* MainAsset = Pkg->FindAssetInPackage();
+
+		if (!MainAsset) return;
+
+		if (IInterface_AssetUserData* AUDOwner = Cast<IInterface_AssetUserData>(MainAsset))
+		{
+			AUDOwner->AddAssetUserDataOfClass(UBSGEncryptUserData::StaticClass());
+			Pkg->MarkPackageDirty();
+			MainAsset->Modify();
+		}
+	}
+
+	void MarkPackagePlain(UPackage* Pkg)
+	{
+		if (!Pkg) return;
+		
+		UObject* MainAsset = Pkg->FindAssetInPackage();
+
+		if (!MainAsset) return;
+		
+		if (IInterface_AssetUserData* AUDOwner = Cast<IInterface_AssetUserData>(MainAsset))
+		{
+			//AUDOwner->AddAssetUserDataOfClass(UBSGPlainTag::StaticClass());
+			AUDOwner->RemoveUserDataOfClass(UBSGEncryptUserData::StaticClass());
+			Pkg->MarkPackageDirty();
+			MainAsset->Modify();
+		}
+	}
+
+	bool IsPackageEncrypted(UPackage* Pkg)
+	{
+		if (!Pkg) return false;
+		
+		UObject* MainAsset = Pkg->FindAssetInPackage();
+		if (IInterface_AssetUserData* AUDOwner = Cast<IInterface_AssetUserData>(MainAsset))
+		{
+			bool bEncrypted = AUDOwner->GetAssetUserDataOfClass(UBSGEncryptUserData::StaticClass()) != nullptr;
+			return bEncrypted;
+		}
+		return false;
+	}
+
+	bool IsObjectEncrypted(UObject* Obj)
+	{
+		if (IInterface_AssetUserData* AUDOwner = Cast<IInterface_AssetUserData>(Obj))
+		{
+			bool bEncrypted = AUDOwner->GetAssetUserDataOfClass(UBSGEncryptUserData::StaticClass()) != nullptr;
+			return bEncrypted;
+		}
+		return false;
+	}
+}
+
+
+void UBSGEncryptUserData::Serialize(FArchive& Ar)
+{
+	Super::Serialize(Ar);
+	Ar.UsingCustomVersion(FBSGEncryptVersion::GUID);
+	Ar.SetCustomVersion(FBSGEncryptVersion::GUID, (int32)FBSGEncryptVersion::EBSGEncryptVer::Encrypted, TEXT("BSGE_EncryptTag"));
 }

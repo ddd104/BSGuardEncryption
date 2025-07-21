@@ -1,7 +1,6 @@
 ﻿#include "AssetTypeActions_EncryptedAsset.h"
 
 #include "BSGuardCrypto.h"
-#include "EncryptVersion.h"
 #include "Styling/SlateStyleRegistry.h"
 
 TSharedPtr<class SWidget> FAssetTypeActions_EncryptedAsset::GetThumbnailOverlay(const FAssetData& AssetData) const
@@ -107,7 +106,6 @@ bool FAssetTypeActions_EncryptedAsset::CanRename(const FAssetData& InAsset, FTex
 
 bool FAssetTypeActions_EncryptedAsset::CanDuplicate(const FAssetData& InAsset, FText* OutErrorMsg) const
 {
-	UE_LOG(LogTemp, Display, TEXT("FAssetTypeActions_EncryptedAsset::CanDuplicate"));
 	return Inner->CanDuplicate(InAsset, OutErrorMsg);
 }
 

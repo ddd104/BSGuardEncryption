@@ -24,7 +24,7 @@ public class BSGuardEditor : ModuleRules
 				"AssetTools",
 				"Projects", 
 				"InputCore",      // 可能用到输入/图标
-				"BSGuardCore"
+				"BSGuardCore",
 			}
 			);
 		/*string EnginePath = Path.GetFullPath(Target.RelativeEnginePath);

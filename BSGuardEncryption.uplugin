@@ -31,11 +31,6 @@
 			"Name": "BSGuardCmdlet",
 			"Type": "Developer",
 			"LoadingPhase": "PostEngineInit"
-		},
-		{
-			"Name": "BSContentCommand",
-			"Type": "Developer",
-			"LoadingPhase": "PostEngineInit"
 		}
 	]
 }

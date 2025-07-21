@@ -7,8 +7,8 @@
 #include "ContentBrowserModule.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
 #include "BSGuardCrypto.h"
-#include "EncryptVersion.h"
 #include "IContentBrowserSingleton.h"
+#include "ContentBrowserDelegates.h"
 #include "AssetRegistry/AssetData.h"
 #include "Interfaces/IPluginManager.h"
 #include "Misc/MessageDialog.h"
@@ -24,25 +24,57 @@
 
 #define LOCTEXT_NAMESPACE "FBSGuardEditorModule"
 
-void FBSGuardEditorModule::StartupModule()
+//***********************************
+class FBSGE_AssetActions
 {
-	FString ContentDir = IPluginManager::Get().FindPlugin(TEXT("BSGuardEncryption"))->GetBaseDir() / TEXT("Resources");
-	FSlateStyleSet* StyleSet = new FSlateStyleSet("GuardEncryptionStyle");
-	StyleSet->SetContentRoot(ContentDir);
-	StyleSet->Set("GuardEncryption.LockIcon16", new FSlateImageBrush(StyleSet->RootToContentDir(TEXT("LockIcon16.png")), FVector2D(16,16)));
-	StyleSet->Set("GuardEncryption.LockIcon64", new FSlateImageBrush(StyleSet->RootToContentDir(TEXT("LockIcon64.png")), FVector2D(64,64)));
-	FSlateStyleRegistry::RegisterSlateStyle(*StyleSet);
+public:
+
+	static void RegisterAssetActions();
+	static void UnregisterAssetActions();
+
+	static void RegisterAssetTypeAction();
+	static void UnregisterAssetTypeAction();
+private:
 	
-	// 注册内容浏览器菜单扩展
+	static TSharedRef<FExtender> OnExtendContentBrowserAssetMenu(const TArray<FAssetData>& SelectedAssets);
+	static void CreateAssetContextMenu(FMenuBuilder& MenuBuilder, const TArray<FAssetData> SelectedAssets);
+	static void EncryptSelectedAsset(const FAssetData& AssetData);
+	static void DecryptSelectedAsset(const FAssetData& AssetData);
+
+	
+	static bool CanMigrateEncryptedAssets();
+	static void CreateEncryptedAssetsMenu(FMenuBuilder& MenuBuilder, TArray<FAssetData> SelectedAssets);
+	static TSharedRef<FExtender> MakeMigrateEncryptedAssets(const TArray<FAssetData>& SelectedAssets);
+	static TSharedRef<FExtender> MakeAssetsAction(const TArray<FAssetData>& SelectedAssets);
+private:
+	static FDelegateHandle ExtenderHandle;
+};
+
+
+void FBSGE_AssetActions::RegisterAssetActions()
+{
 	bool ValidKey = FBSGuardCrypto::HasValidKey();
 	if (ValidKey)
 	{
 		FContentBrowserModule& ContentBrowserModule = FModuleManager::LoadModuleChecked<FContentBrowserModule>("ContentBrowser");
 		TArray<FContentBrowserMenuExtender_SelectedAssets>& CBMenuExtenderDelegates = ContentBrowserModule.GetAllAssetViewContextMenuExtenders();
-		CBMenuExtenderDelegates.Add(FContentBrowserMenuExtender_SelectedAssets::CreateStatic(&FBSGuardEditorModule::OnExtendContentBrowserAssetMenu));
+		CBMenuExtenderDelegates.Add(FContentBrowserMenuExtender_SelectedAssets::CreateStatic(&FBSGE_AssetActions::OnExtendContentBrowserAssetMenu));
 	}
 
-	// 注册加密AssetTypeAction
+}
+
+void FBSGE_AssetActions::UnregisterAssetActions()
+{
+	if (!ExtenderHandle.IsValid())
+		return;
+
+	FContentBrowserModule& CB = FModuleManager::GetModuleChecked<FContentBrowserModule>("ContentBrowser");
+	auto& Delegates = CB.GetAllAssetViewContextMenuExtenders();
+	Delegates.RemoveAll([&](const FContentBrowserMenuExtender_SelectedAssets& D){return D.GetHandle()==ExtenderHandle;});
+}
+
+void FBSGE_AssetActions::RegisterAssetTypeAction()
+{
 	TArray<TWeakPtr<IAssetTypeActions>> OutAssetTypeActionsList;
 	IAssetTools& AssetTools = FModuleManager::GetModuleChecked<FAssetToolsModule>("AssetTools").Get();
 	AssetTools.GetAssetTypeActionsList(OutAssetTypeActionsList);
@@ -52,43 +84,10 @@ void FBSGuardEditorModule::StartupModule()
 		TSharedPtr<FAssetTypeActions_EncryptedAsset> GuardAssetAction = MakeShareable(new FAssetTypeActions_EncryptedAsset(AssetTypeAction.Pin().ToSharedRef()));
 		AssetTools.RegisterAssetTypeActions(GuardAssetAction.ToSharedRef());
 	}
-
-	/*UPackage::PreSavePackageWithContextEvent.AddStatic(
-	[](UPackage* Package, FObjectPreSaveContext SaveContext)
-	{
-		// ① 判定是否加密 —— 换成你用 CustomVersion / PackageFlag 的逻辑
-		const bool bNeedEncrypt = BSGEncrypt::IsPackageEncrypted(Package);
-		if (!bNeedEncrypt) return;
-
-		
-	});*/
 	
 	// 注册保存包事件，以在资产保存后自动加密
 	UPackage::PackageSavedWithContextEvent.AddStatic([](const FString& PackageFileName, UPackage* Package, FObjectPostSaveContext Context)
 	{
-		/*const FName Key(TEXT("BSGE_EncryptTag"));
-		const FName ReadyKey(TEXT("BSGE_ReadyToEncrypt"));
-		UMetaData* Meta = Package ? Package->GetMetaData() : nullptr;
-		if (!Meta) { return; }
-		bool bNeedEncrypt = false;
-		UObject* MainAsset = Package->FindAssetInPackage();
-		TArray<UObject*> Objects;
-		GetObjectsWithPackage(Package, Objects, /*bIncludeNested=#1#false);
-		for (UObject* Obj : Objects)
-		{
-
-			bool bHasKey = Meta->HasValue(Obj, Key);
-			bool bHasReadyKey = Meta->HasValue(Obj, ReadyKey);
-			if (bHasKey && !bHasReadyKey)
-			{
-				bNeedEncrypt = true;
-				break;
-			}
-		}
-		if (!bNeedEncrypt)
-		{
-			return;
-		}*/
 		if (!BSGEncrypt::IsPackageEncrypted(Package))
 		{
 			return;
@@ -106,24 +105,24 @@ void FBSGuardEditorModule::StartupModule()
 	});
 }
 
-void FBSGuardEditorModule::ShutdownModule()
+void FBSGE_AssetActions::UnregisterAssetTypeAction()
 {
 	
 }
 
-TSharedRef<FExtender> FBSGuardEditorModule::OnExtendContentBrowserAssetMenu(const TArray<FAssetData>& SelectedAssets)
+TSharedRef<FExtender> FBSGE_AssetActions::OnExtendContentBrowserAssetMenu(const TArray<FAssetData>& SelectedAssets)
 {
 	TSharedRef<FExtender> Extender(new FExtender());
 	Extender->AddMenuExtension(
 			"CommonAssetActions", // 在高级操作区之后插入
 			EExtensionHook::After,
 			nullptr,
-			FMenuExtensionDelegate::CreateStatic(&FBSGuardEditorModule::CreateAssetContextMenu, SelectedAssets)
+			FMenuExtensionDelegate::CreateStatic(&FBSGE_AssetActions::CreateAssetContextMenu, SelectedAssets)
 		);
 	return Extender;
 }
 
-void FBSGuardEditorModule::CreateAssetContextMenu(FMenuBuilder& MenuBuilder, const TArray<FAssetData> SelectedAssets)
+void FBSGE_AssetActions::CreateAssetContextMenu(FMenuBuilder& MenuBuilder, const TArray<FAssetData> SelectedAssets)
 {
 	if (SelectedAssets.Num() == 0) return;
 	bool HasEncryptionButton = false;
@@ -169,7 +168,6 @@ void FBSGuardEditorModule::CreateAssetContextMenu(FMenuBuilder& MenuBuilder, con
 				}),
 				FCanExecuteAction::CreateLambda([]()
 				{
-					// 仅当密钥有效时允许解密
 					return FBSGuardCrypto::HasValidKey();
 				})
 			)
@@ -189,29 +187,15 @@ void FBSGuardEditorModule::CreateAssetContextMenu(FMenuBuilder& MenuBuilder, con
 					{
 						UObject* AssetObj = AssetData.GetAsset();
 						UPackage* Package = AssetObj->GetPackage();
-						/*UMetaData* Meta = Package ? Package->GetMetaData() : nullptr;
-						if (AssetObj)
-						{
-							if (Meta)
-							{
-								Meta->SetValue(AssetObj, FName(TEXT("BSGE_ReadyToEncrypt")), TEXT("true"));
-
-								Package->MarkPackageDirty();
-								FAssetRegistryModule::AssetRenamed(AssetObj, Package->GetName());
-							}
-						}*/
 						BSGEncrypt::MarkPackageEncrypted(Package);
 						const FString FileName =FPackageName::LongPackageNameToFilename(Package->GetName(), FPackageName::GetAssetPackageExtension());
 						UPackage::SavePackage(Package, nullptr, RF_Standalone, *FileName);
-						/*CollectGarbage(RF_NoFlags);
-						UPackage* Reloaded = LoadPackage(nullptr, *Package->GetName(), LOAD_None);*/
 						Package->MarkPackageDirty();
 						EncryptSelectedAsset(AssetData);
 					}
 				}),
 				FCanExecuteAction::CreateLambda([]()
 				{
-						// 需要有有效密钥，且文件未加密
 						return FBSGuardCrypto::HasValidKey();
 				})
 			)
@@ -219,42 +203,30 @@ void FBSGuardEditorModule::CreateAssetContextMenu(FMenuBuilder& MenuBuilder, con
 	}
 }
 
-void FBSGuardEditorModule::EncryptSelectedAsset(const FAssetData& AssetData)
+void FBSGE_AssetActions::EncryptSelectedAsset(const FAssetData& AssetData)
 {
 	// 获取物理文件路径 (.uasset 主文件)
 	FString PackageName = AssetData.PackageName.ToString();
 	FString AssetFilePath = FPackageName::LongPackageNameToFilename(PackageName, FPackageName::GetAssetPackageExtension());
-	if (!FBSGuardCrypto::HasValidKey())
-	{
-		FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("NoKeyError", "密钥未设置或无效，无法加密资产。"));
-		return;
-	}
+
 	// 确保资产保存了最新内容
 	UPackage* Package = AssetData.GetPackage();
 	if (Package)
 	{
 		Package->FullyLoad();
-		// 保存Package到磁盘，以更新.uasset文件
-		FString Error;
+		bool SaveState = false;
 #if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 6
 		FSavePackageArgs SaveArgs;
-		UPackage::SavePackage(Package, AssetData.GetAsset(), *AssetFilePath, SaveArgs);
+		SaveState = UPackage::SavePackage(Package, AssetData.GetAsset(), *AssetFilePath, SaveArgs);
 #else
-		UPackage::SavePackage(Package, nullptr, RF_Public | RF_Standalone, *AssetFilePath, nullptr, nullptr, false, true, SAVE_NoError);
+		SaveState = UPackage::SavePackage(Package, nullptr, RF_Public | RF_Standalone, *AssetFilePath, nullptr, nullptr, false, true, SAVE_NoError);
 #endif
+		if (!SaveState)
+		{
+			UE_LOG(LogTemp, Error, TEXT("SaveFile failed for asset %s, Encrypt interrupted"), *PackageName);
+			return;
+		}
 	}
-#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 6
-	FMetaData MD = Package ? Package->GetMetaData() : FMetaData();
-	MD.RemoveValue(Package, FName(TEXT("BSGE_ReadyToEncrypt")));
-#else
-	UMetaData* MD = Package ? Package->GetMetaData() : nullptr;
-	if (MD)
-	{
-		MD->RemoveValue(Package, FName(TEXT("BSGE_ReadyToEncrypt")));
-	}
-#endif
-	
-	
 	// 执行加密
 	if (FBSGuardCrypto::EncryptFile(AssetFilePath))
 	{
@@ -275,7 +247,7 @@ void FBSGuardEditorModule::EncryptSelectedAsset(const FAssetData& AssetData)
 		FContentBrowserModule* CBModule = FModuleManager::GetModulePtr<FContentBrowserModule>("ContentBrowser");
 		if (CBModule)
 		{
-			CBModule->Get().SyncBrowserToAssets({ AssetData }); // 简单做一下刷新
+			CBModule->Get().SyncBrowserToAssets({ AssetData });
 		}
 	}
 	else
@@ -284,34 +256,44 @@ void FBSGuardEditorModule::EncryptSelectedAsset(const FAssetData& AssetData)
 	}
 }
 
-void FBSGuardEditorModule::DecryptSelectedAsset(const FAssetData& AssetData)
+void FBSGE_AssetActions::DecryptSelectedAsset(const FAssetData& AssetData)
 {
 	FString PackageName = AssetData.PackageName.ToString();
 	FString AssetFilePath = FPackageName::LongPackageNameToFilename(PackageName, FPackageName::GetAssetPackageExtension());
-	if (!FBSGuardCrypto::HasValidKey())
+
+	// 确保资产保存了最新内容
+	UPackage* Package = AssetData.GetPackage();
+	if (Package)
 	{
-		FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("NoKeyError", "密钥未设置或无效，无法解密资产。"));
-		return;
+		Package->FullyLoad();
+		bool SaveState = false;
+#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 6
+		FSavePackageArgs SaveArgs;
+		SaveState = UPackage::SavePackage(Package, AssetData.GetAsset(), *AssetFilePath, SaveArgs);
+#else
+		SaveState = UPackage::SavePackage(Package, nullptr, RF_Public | RF_Standalone, *AssetFilePath, nullptr, nullptr, false, true, SAVE_NoError);
+#endif
+		if (!SaveState)
+		{
+			UE_LOG(LogTemp, Error, TEXT("SaveFile failed for asset %s, Decrypt interrupted"), *PackageName);
+			return;
+		}
 	}
-	// 执行解密（需注意解密后文件即为明文，应妥善处理）
-	if (FBSGuardCrypto::DecryptFile(AssetFilePath, AssetData))
+	
+	// 执行解密
+	if (FBSGuardCrypto::DecryptFile(AssetFilePath))
 	{
 		FString UexpPath = FPaths::ChangeExtension(AssetFilePath, TEXT(".uexp"));
 		if (IFileManager::Get().FileExists(*UexpPath))
 		{
-			FBSGuardCrypto::DecryptFile(UexpPath, AssetData);
+			FBSGuardCrypto::DecryptFile(UexpPath);
 		}
 		FString UbulkPath = FPaths::ChangeExtension(AssetFilePath, TEXT(".ubulk"));
 		if (IFileManager::Get().FileExists(*UbulkPath))
 		{
-			FBSGuardCrypto::DecryptFile(UbulkPath, AssetData);
+			FBSGuardCrypto::DecryptFile(UbulkPath);
 		}
 		UE_LOG(LogTemp, Display, TEXT("Asset %s decrypted."), *PackageName);
-		// 重新加载资产，以反映明文（例如此时可以打开查看）
-		if (UPackage* Package = AssetData.GetPackage())
-		{
-			Package->FullyLoad();
-		}
 		// 刷新浏览器
 		FContentBrowserModule* CBModule = FModuleManager::GetModulePtr<FContentBrowserModule>("ContentBrowser");
 		if (CBModule)
@@ -324,6 +306,35 @@ void FBSGuardEditorModule::DecryptSelectedAsset(const FAssetData& AssetData)
 		FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("DecryptFailed", "解密资产失败，请检查密钥或日志。"));
 	}
 }
+
+
+FDelegateHandle FBSGE_AssetActions::ExtenderHandle;
+//***********************************
+
+void FBSGuardEditorModule::StartupModule()
+{
+	FString ContentDir = IPluginManager::Get().FindPlugin(TEXT("BSGuardEncryption"))->GetBaseDir() / TEXT("Resources");
+	FSlateStyleSet* StyleSet = new FSlateStyleSet("GuardEncryptionStyle");
+	StyleSet->SetContentRoot(ContentDir);
+	StyleSet->Set("GuardEncryption.LockIcon16", new FSlateImageBrush(StyleSet->RootToContentDir(TEXT("LockIcon16.png")), FVector2D(16,16)));
+	StyleSet->Set("GuardEncryption.LockIcon64", new FSlateImageBrush(StyleSet->RootToContentDir(TEXT("LockIcon64.png")), FVector2D(64,64)));
+	FSlateStyleRegistry::RegisterSlateStyle(*StyleSet);
+	
+	
+	// 注册内容浏览器菜单扩展
+	FBSGE_AssetActions::RegisterAssetActions();
+	
+	// 注册加密AssetTypeAction
+	FBSGE_AssetActions::RegisterAssetTypeAction();
+
+}
+
+void FBSGuardEditorModule::ShutdownModule()
+{
+	FBSGE_AssetActions::UnregisterAssetActions();
+	FBSGE_AssetActions::UnregisterAssetTypeAction();
+}
+
 
 
 
