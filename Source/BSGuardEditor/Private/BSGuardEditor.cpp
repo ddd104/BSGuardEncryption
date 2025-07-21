@@ -41,11 +41,9 @@ private:
 	static void EncryptSelectedAsset(const FAssetData& AssetData);
 	static void DecryptSelectedAsset(const FAssetData& AssetData);
 
-	
 	static bool CanMigrateEncryptedAssets();
 	static void CreateEncryptedAssetsMenu(FMenuBuilder& MenuBuilder, TArray<FAssetData> SelectedAssets);
 	static TSharedRef<FExtender> MakeMigrateEncryptedAssets(const TArray<FAssetData>& SelectedAssets);
-	static TSharedRef<FExtender> MakeAssetsAction(const TArray<FAssetData>& SelectedAssets);
 private:
 	static FDelegateHandle ExtenderHandle;
 };
@@ -59,6 +57,9 @@ void FBSGE_AssetActions::RegisterAssetActions()
 		FContentBrowserModule& ContentBrowserModule = FModuleManager::LoadModuleChecked<FContentBrowserModule>("ContentBrowser");
 		TArray<FContentBrowserMenuExtender_SelectedAssets>& CBMenuExtenderDelegates = ContentBrowserModule.GetAllAssetViewContextMenuExtenders();
 		CBMenuExtenderDelegates.Add(FContentBrowserMenuExtender_SelectedAssets::CreateStatic(&FBSGE_AssetActions::OnExtendContentBrowserAssetMenu));
+		ExtenderHandle = CBMenuExtenderDelegates.Last().GetHandle();
+		
+		//CBMenuExtenderDelegates.Add(FContentBrowserMenuExtender_SelectedAssets::CreateStatic(&FBSGE_AssetActions::MakeMigrateEncryptedAssets));
 	}
 
 }
@@ -96,11 +97,16 @@ void FBSGE_AssetActions::RegisterAssetTypeAction()
 		// 当一个资产包保存成功后触发
 		if (FBSGuardCrypto::IsEncryptedAssetFile(PackageFileName) == false)
 		{
+			Package->SetPackageFlags(PKG_DisallowExport);
 			// 如果存在有效密钥，且当前保存的是未加密文件，将其加密
 			if (FBSGuardCrypto::EncryptFile(PackageFileName))
 			{
-				UE_LOG(LogTemp, Log, TEXT("Encrypted asset on save: %s"), *PackageFileName);
+				UE_LOG(LogTemp, Log, TEXT("Encrypted asset on save: %s, ackageFlags: %d"), *PackageFileName, Package->GetPackageFlags());
 			}
+		}
+		else
+		{
+			Package->ClearPackageFlags(PKG_DisallowExport);
 		}
 	});
 }
@@ -158,6 +164,7 @@ void FBSGE_AssetActions::CreateAssetContextMenu(FMenuBuilder& MenuBuilder, const
 					for (const FAssetData& AssetData : NeedDecryptFiles)
 					{
 						UPackage* Package = AssetData.GetPackage();
+						Package->ClearPackageFlags(PKG_DisallowExport);
 						BSGEncrypt::MarkPackagePlain(Package);
 						const FString FileName =FPackageName::LongPackageNameToFilename(Package->GetName(), FPackageName::GetAssetPackageExtension());
 						UPackage::SavePackage(Package, nullptr, RF_Standalone, *FileName);
@@ -185,8 +192,8 @@ void FBSGE_AssetActions::CreateAssetContextMenu(FMenuBuilder& MenuBuilder, const
 				{
 					for (const FAssetData& AssetData : NeedEncryptionFiles)
 					{
-						UObject* AssetObj = AssetData.GetAsset();
-						UPackage* Package = AssetObj->GetPackage();
+						UPackage* Package = AssetData.GetPackage();
+						Package->SetPackageFlags(PKG_DisallowExport);
 						BSGEncrypt::MarkPackageEncrypted(Package);
 						const FString FileName =FPackageName::LongPackageNameToFilename(Package->GetName(), FPackageName::GetAssetPackageExtension());
 						UPackage::SavePackage(Package, nullptr, RF_Standalone, *FileName);
@@ -305,6 +312,51 @@ void FBSGE_AssetActions::DecryptSelectedAsset(const FAssetData& AssetData)
 	{
 		FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("DecryptFailed", "解密资产失败，请检查密钥或日志。"));
 	}
+}
+
+bool FBSGE_AssetActions::CanMigrateEncryptedAssets()
+{
+	return false;
+}
+
+void FBSGE_AssetActions::CreateEncryptedAssetsMenu(FMenuBuilder& MenuBuilder, TArray<FAssetData> SelectedAssets)
+{
+	MenuBuilder.AddMenuEntry(
+			NSLOCTEXT("NTAssetGuard", "MigrateDisabled", "Migrate (加密资产禁用)"),
+			NSLOCTEXT("NTAssetGuard", "MigrateDisabled_TT", "加密资产不可迁移"),
+			FSlateIcon(),
+			FUIAction(
+				FExecuteAction(), 
+				FCanExecuteAction::CreateStatic(&FBSGE_AssetActions::CanMigrateEncryptedAssets)
+			)
+		);
+}
+
+TSharedRef<FExtender> FBSGE_AssetActions::MakeMigrateEncryptedAssets(const TArray<FAssetData>& SelectedAssets)
+{
+	auto Ext = MakeShared<FExtender>();
+	bool state = false;
+	for (const FAssetData& AssetData : SelectedAssets)
+	{
+		FString PackageName = SelectedAssets[0].PackageName.ToString();
+		FString AssetFilePath = FPackageName::LongPackageNameToFilename(PackageName, FPackageName::GetAssetPackageExtension());
+		if (FBSGuardCrypto::IsEncryptedAssetFile(AssetFilePath))
+		{
+			state = true;
+			break;
+		}
+	}
+	
+	if (state)
+	{
+		Ext->AddMenuExtension(
+			"AssetContextAdvancedActions", 
+			EExtensionHook::Before, 
+			nullptr, 
+			FMenuExtensionDelegate::CreateStatic(&FBSGE_AssetActions::CreateEncryptedAssetsMenu, SelectedAssets)
+		);
+	}
+	return Ext;
 }
 
 
