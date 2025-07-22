@@ -14,6 +14,7 @@ struct FBSGE_EarlyInstaller
 {
 	FBSGE_EarlyInstaller()
 	{
+		UE_LOG(LogTemp, Display, TEXT("FBSGE_EarlyInstaller"));
 		// 保存原始平台文件指针
 		OriginalPlatformFile = &FPlatformFileManager::Get().GetPlatformFile();
 		// 创建我们的自定义平台文件并初始化
@@ -49,6 +50,13 @@ public:
 
 
 static FBSGE_EarlyInstaller BSGE_PlatformFileAutoInstaller;
+
+IPlatformFile* FBSGuardCoreModule::GetPlatformFile()
+{
+	static FBSGuardPlatformFile Guard;
+	return &Guard;
+}
+
 void FBSGuardCoreModule::StartupModule()
 {
 	
@@ -56,14 +64,7 @@ void FBSGuardCoreModule::StartupModule()
 
 void FBSGuardCoreModule::ShutdownModule()
 {
-	/*// 模块卸载时恢复原始PlatformFile，确保热重载不会叠加包裹
-	if (OriginalPlatformFile)
-	{
-		FPlatformFileManager::Get().SetPlatformFile(*OriginalPlatformFile);
-	}
-	GuardPlatformFile.Reset();
-	BSGuardSettings.Reset();
-	UE_LOG(LogTemp, Log, TEXT("GuardEncryption: Platform file restored to original on shutdown."));*/
+	
 }
 
 #undef LOCTEXT_NAMESPACE

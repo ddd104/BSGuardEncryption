@@ -9,6 +9,12 @@ FBSGuardPlatformFile::FBSGuardFileHandleWrite::FBSGuardFileHandleWrite(IFileHand
 	// Magic
 	InnerHandle->Write(BSGE::CryptoMagic, 4);
 
+	// Encryption/Compression state bytes (currently always 1)
+	uint8 CEState = 1;
+	uint8 CTState = 1;
+	InnerHandle->Write(&CEState, 1);
+	InnerHandle->Write(&CTState, 1);
+
 	// Version
 	uint8 Version = BSGE::CryptoVersion;
 	InnerHandle->Write(&Version, 1);

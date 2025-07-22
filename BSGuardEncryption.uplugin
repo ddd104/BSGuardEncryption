@@ -19,6 +19,7 @@
 			"Name": "BSGuardCore",
 			"Type": "Runtime",
 			"LoadingPhase": "PreEarlyLoadingScreen",
+			"bCanBeUsedWithEditorCommandlets": true,
 			"PreloadDependencies": [ "AssetRegistry" ],
 			"WhitelistTargets": [ "Editor", "Game", "Program" ]
 		},
