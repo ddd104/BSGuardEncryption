@@ -142,7 +142,8 @@ void FBSGE_AssetActions::CreateAssetContextMenu(FMenuBuilder& MenuBuilder, const
 	for (const FAssetData& AssetData : SelectedAssets)
 	{
 		FString AssetFilePath = AssetData.PackageName.ToString();
-		AssetFilePath = FPackageName::LongPackageNameToFilename(AssetFilePath, FPackageName::GetAssetPackageExtension());
+		const FString& PackageExt = FBSGuardEditorModule::ChooseHeaderExt(AssetData);
+		AssetFilePath = FPackageName::LongPackageNameToFilename(AssetFilePath, PackageExt);
 		if (!FBSGuardCrypto::ShouldEncryptAsset(AssetFilePath))
 		{
 			continue;
@@ -174,7 +175,8 @@ void FBSGE_AssetActions::CreateAssetContextMenu(FMenuBuilder& MenuBuilder, const
 						UPackage* Package = AssetData.GetPackage();
 						Package->ClearPackageFlags(PKG_DisallowExport);
 						BSGEncrypt::MarkPackagePlain(Package);
-						const FString FileName =FPackageName::LongPackageNameToFilename(Package->GetName(), FPackageName::GetAssetPackageExtension());
+						const FString& PackageExt = FBSGuardEditorModule::ChooseHeaderExt(AssetData);
+						const FString FileName =FPackageName::LongPackageNameToFilename(Package->GetName(), PackageExt);
 						UPackage::SavePackage(Package, nullptr, RF_Standalone, *FileName);
 						Package->MarkPackageDirty();
 						DecryptSelectedAsset(AssetData);
@@ -203,7 +205,8 @@ void FBSGE_AssetActions::CreateAssetContextMenu(FMenuBuilder& MenuBuilder, const
 						UPackage* Package = AssetData.GetPackage();
 						Package->SetPackageFlags(PKG_DisallowExport);
 						BSGEncrypt::MarkPackageEncrypted(Package);
-						const FString FileName =FPackageName::LongPackageNameToFilename(Package->GetName(), FPackageName::GetAssetPackageExtension());
+						const FString& PackageExt = FBSGuardEditorModule::ChooseHeaderExt(AssetData);
+						const FString FileName =FPackageName::LongPackageNameToFilename(Package->GetName(), PackageExt);
 						UPackage::SavePackage(Package, nullptr, RF_Standalone, *FileName);
 						Package->MarkPackageDirty();
 						EncryptSelectedAsset(AssetData);
@@ -222,7 +225,8 @@ void FBSGE_AssetActions::EncryptSelectedAsset(const FAssetData& AssetData)
 {
 	// 获取物理文件路径 (.uasset 主文件)
 	FString PackageName = AssetData.PackageName.ToString();
-	FString AssetFilePath = FPackageName::LongPackageNameToFilename(PackageName, FPackageName::GetAssetPackageExtension());
+	const FString& PackageExt = FBSGuardEditorModule::ChooseHeaderExt(AssetData);
+	FString AssetFilePath = FPackageName::LongPackageNameToFilename(PackageName, PackageExt);
 
 	// 确保资产保存了最新内容
 	UPackage* Package = AssetData.GetPackage();
@@ -274,7 +278,8 @@ void FBSGE_AssetActions::EncryptSelectedAsset(const FAssetData& AssetData)
 void FBSGE_AssetActions::DecryptSelectedAsset(const FAssetData& AssetData)
 {
 	FString PackageName = AssetData.PackageName.ToString();
-	FString AssetFilePath = FPackageName::LongPackageNameToFilename(PackageName, FPackageName::GetAssetPackageExtension());
+	const FString& PackageExt = FBSGuardEditorModule::ChooseHeaderExt(AssetData);
+	FString AssetFilePath = FPackageName::LongPackageNameToFilename(PackageName, PackageExt);
 
 	// 确保资产保存了最新内容
 	UPackage* Package = AssetData.GetPackage();
@@ -347,7 +352,8 @@ TSharedRef<FExtender> FBSGE_AssetActions::MakeMigrateEncryptedAssets(const TArra
 	for (const FAssetData& AssetData : SelectedAssets)
 	{
 		FString PackageName = SelectedAssets[0].PackageName.ToString();
-		FString AssetFilePath = FPackageName::LongPackageNameToFilename(PackageName, FPackageName::GetAssetPackageExtension());
+		const FString& PackageExt = FBSGuardEditorModule::ChooseHeaderExt(AssetData);
+		FString AssetFilePath = FPackageName::LongPackageNameToFilename(PackageName, PackageExt);
 		if (FBSGuardCrypto::IsEncryptedAssetFile(AssetFilePath))
 		{
 			state = true;
@@ -370,6 +376,28 @@ TSharedRef<FExtender> FBSGE_AssetActions::MakeMigrateEncryptedAssets(const TArra
 
 FDelegateHandle FBSGE_AssetActions::ExtenderHandle;
 //***********************************
+
+const FString& FBSGuardEditorModule::ChooseHeaderExt(const FAssetData& AD)
+{
+	// ① 是否是关卡（UWorld）？
+	const bool bIsWorld = (AD.AssetClassPath == UWorld::StaticClass()->GetClassPathName());
+
+	// ② 项目当前是否以文本格式保存包？（你也可以改成读 Editor 设置）
+	const bool bTextFormat = false;  // GetDefault<UEditorLoadingSavingSettings>();
+
+	if (bIsWorld)
+	{
+		return bTextFormat
+			? FPackageName::GetTextMapPackageExtension()   // ".utmap" :contentReference[oaicite:0]{index=0}
+			: FPackageName::GetMapPackageExtension();      // ".umap"  :contentReference[oaicite:1]{index=1}
+	}
+	else
+	{
+		return bTextFormat
+			? FPackageName::GetTextAssetPackageExtension() // ".utasset" :contentReference[oaicite:2]{index=2}
+			: FPackageName::GetAssetPackageExtension();    // ".uasset"  :contentReference[oaicite:3]{index=3}
+	}
+}
 
 void FBSGuardEditorModule::StartupModule()
 {

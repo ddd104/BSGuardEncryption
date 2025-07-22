@@ -1,11 +1,13 @@
 ﻿#include "AssetTypeActions_EncryptedAsset.h"
 
 #include "BSGuardCrypto.h"
+#include "BSGuardEditor.h"
 #include "Styling/SlateStyleRegistry.h"
 
 TSharedPtr<class SWidget> FAssetTypeActions_EncryptedAsset::GetThumbnailOverlay(const FAssetData& AssetData) const
 {
-	FString AssetFilePath = FPackageName::LongPackageNameToFilename(AssetData.PackageName.ToString(), FPackageName::GetAssetPackageExtension());
+	const FString& PackageExt = FBSGuardEditorModule::ChooseHeaderExt(AssetData);
+	FString AssetFilePath = FPackageName::LongPackageNameToFilename(AssetData.PackageName.ToString(), PackageExt);
 	/*if (FBSGuardCrypto::IsEncryptedAssetFile(AssetFilePath))
 	{
 		return FSlateStyleRegistry::FindSlateStyle("GuardEncryptionStyle")->GetBrush("GuardEncryption.LockIcon16");
@@ -60,7 +62,8 @@ void FAssetTypeActions_EncryptedAsset::OpenAssetEditor(const TArray<UObject*>& I
 	TArray<UObject*> MakeOpenObjects;
 	for (UObject* Asset : InObjects)
 	{
-		FString AssetPath = FPackageName::LongPackageNameToFilename(Asset->GetPackage()->GetName(), FPackageName::GetAssetPackageExtension());
+		const FString& PackageExt = FBSGuardEditorModule::ChooseHeaderExt(Asset);
+		FString AssetPath = FPackageName::LongPackageNameToFilename(Asset->GetPackage()->GetName(), PackageExt);
         
 		FILE* File = nullptr;
 		fopen_s(&File, TCHAR_TO_ANSI(*AssetPath), "rb");
