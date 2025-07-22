@@ -263,7 +263,7 @@ bool FBSGuardCrypto::ShouldEncryptAsset(const FString& FilePath)
 	FString AbsPath = FPaths::ConvertRelativePathToFull(FilePath);
 	FString EngineDir = FPaths::ConvertRelativePathToFull(FPaths::EngineDir());
 	FString SavedDir = FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir());
-	if (AbsPath.StartsWith(EngineDir) || AbsPath.Contains(TEXT("/Engine/")) || AbsPath.StartsWith(SavedDir))
+	if (AbsPath.StartsWith(EngineDir) || AbsPath.StartsWith(SavedDir))
 	{
 		// Skip engine content to avoid corrupting built-in assets
 		return false;
