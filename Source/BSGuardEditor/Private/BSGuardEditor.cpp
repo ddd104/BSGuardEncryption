@@ -249,18 +249,6 @@ void FBSGE_AssetActions::EncryptSelectedAsset(const FAssetData& AssetData)
 	// 执行加密
 	if (FBSGuardCrypto::EncryptFile(AssetFilePath))
 	{
-		// 如资产还有.euxp或.ubulk文件，也执行加密
-		FString UexpPath = FPaths::ChangeExtension(AssetFilePath, TEXT(".uexp"));
-		if (IFileManager::Get().FileExists(*UexpPath))
-		{
-			FBSGuardCrypto::EncryptFile(UexpPath);
-		}
-		FString UbulkPath = FPaths::ChangeExtension(AssetFilePath, TEXT(".ubulk"));
-		if (IFileManager::Get().FileExists(*UbulkPath))
-		{
-			FBSGuardCrypto::EncryptFile(UbulkPath);
-		}
-		// 通知用户成功，可在输出日志查看
 		UE_LOG(LogTemp, Display, TEXT("Asset %s encrypted."), *PackageName);
 		// 刷新内容浏览器显示（改变图标等）
 		FContentBrowserModule* CBModule = FModuleManager::GetModulePtr<FContentBrowserModule>("ContentBrowser");
@@ -303,16 +291,6 @@ void FBSGE_AssetActions::DecryptSelectedAsset(const FAssetData& AssetData)
 	// 执行解密
 	if (FBSGuardCrypto::DecryptFile(AssetFilePath))
 	{
-		FString UexpPath = FPaths::ChangeExtension(AssetFilePath, TEXT(".uexp"));
-		if (IFileManager::Get().FileExists(*UexpPath))
-		{
-			FBSGuardCrypto::DecryptFile(UexpPath);
-		}
-		FString UbulkPath = FPaths::ChangeExtension(AssetFilePath, TEXT(".ubulk"));
-		if (IFileManager::Get().FileExists(*UbulkPath))
-		{
-			FBSGuardCrypto::DecryptFile(UbulkPath);
-		}
 		UE_LOG(LogTemp, Display, TEXT("Asset %s decrypted."), *PackageName);
 		// 刷新浏览器
 		FContentBrowserModule* CBModule = FModuleManager::GetModulePtr<FContentBrowserModule>("ContentBrowser");

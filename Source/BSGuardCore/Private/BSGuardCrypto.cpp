@@ -270,8 +270,8 @@ bool FBSGuardCrypto::ShouldEncryptAsset(const FString& FilePath)
 	}
 
 	bool bIsAssetFile = FilePath.EndsWith(TEXT(".uasset")) ||
-						FilePath.EndsWith(TEXT(".uexp")) ||
-						FilePath.EndsWith(TEXT(".ubulk"));
+						FilePath.EndsWith(TEXT(".umap")) ||
+						FilePath.EndsWith(TEXT(".utasset")) || FilePath.EndsWith(TEXT(".utmap"));
 	if (!bIsAssetFile)
 	{
 		return false;
