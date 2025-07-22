@@ -10,11 +10,10 @@
 
 
 
-struct FNTAG_EarlyInstaller
+struct FBSGE_EarlyInstaller
 {
-	FNTAG_EarlyInstaller()
+	FBSGE_EarlyInstaller()
 	{
-		Base = &FPlatformFileManager::Get().GetPlatformFile();
 		// 保存原始平台文件指针
 		OriginalPlatformFile = &FPlatformFileManager::Get().GetPlatformFile();
 		// 创建我们的自定义平台文件并初始化
@@ -40,9 +39,8 @@ struct FNTAG_EarlyInstaller
 		UE_LOG(LogTemp, Log, TEXT("GuardEncryption: Custom platform file installed. Encryption %s."), 
 			   FBSGuardCrypto::HasValidKey() ? TEXT("ENABLED") : TEXT("DISABLED"));
 	}
-
+	
 public:
-	IPlatformFile* Base;
 	IPlatformFile* OriginalPlatformFile;
 	TUniquePtr<class FBSGuardPlatformFile> GuardPlatformFile;
 
@@ -50,10 +48,10 @@ public:
 };  
 
 
-
+static FBSGE_EarlyInstaller BSGE_PlatformFileAutoInstaller;
 void FBSGuardCoreModule::StartupModule()
 {
-	static FNTAG_EarlyInstaller GNTAG_PlatformFileAutoInstaller;
+	
 }
 
 void FBSGuardCoreModule::ShutdownModule()

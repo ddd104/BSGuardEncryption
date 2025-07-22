@@ -26,11 +26,6 @@
 			"Name": "BSGuardEditor",
 			"Type": "Editor",
 			"LoadingPhase": "PostEngineInit"
-		},
-		{
-			"Name": "BSGuardCmdlet",
-			"Type": "Developer",
-			"LoadingPhase": "PostEngineInit"
 		}
 	]
 }

@@ -53,7 +53,8 @@ FFileStatData FBSGuardPlatformFile::GetStatData(const TCHAR* FilenameOrDirectory
 
 void FBSGuardPlatformFile::SetLowerLevel(IPlatformFile* NewLowerLevel)
 {
-	return LowerLevel->SetLowerLevel(NewLowerLevel);
+	//return LowerLevel->SetLowerLevel(NewLowerLevel);
+	LowerLevel = NewLowerLevel;
 }
 
 bool FBSGuardPlatformFile::IsReadOnly(const TCHAR* Filename)
@@ -112,7 +113,7 @@ IFileHandle* FBSGuardPlatformFile::OpenRead(const TCHAR* Filename, bool bAllowWr
 {
 	FString FilePath(Filename);
 	// 只拦截特定扩展名的资产文件
-	if (FBSGuardCrypto::IsEncryptedAssetFile(FilePath))
+	if (FBSGuardCrypto::ShouldEncryptAsset(FilePath) && FBSGuardCrypto::IsEncryptedAssetFile(FilePath))
 	{
 		// 使用自定义读取句柄，以解密方式提供数据
 		IFileHandle* InnerHandle = LowerLevel->OpenRead(Filename, bAllowWrite);
@@ -129,8 +130,7 @@ IFileHandle* FBSGuardPlatformFile::OpenRead(const TCHAR* Filename, bool bAllowWr
 IFileHandle* FBSGuardPlatformFile::OpenWrite(const TCHAR* Filename, bool bAppend, bool bAllowRead)
 {
 	FString FilePath(Filename);
-	bool bIsAssetFile = FilePath.EndsWith(TEXT(".uasset")) || FilePath.EndsWith(TEXT(".uexp")) || FilePath.EndsWith(TEXT(".ubulk"));
-	if (bIsAssetFile)
+	if (FBSGuardCrypto::ShouldEncryptAsset(FilePath))
 	{
 		if (!FBSGuardCrypto::HasValidKey())
 		{

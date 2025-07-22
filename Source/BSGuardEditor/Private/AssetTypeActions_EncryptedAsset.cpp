@@ -15,7 +15,7 @@ TSharedPtr<class SWidget> FAssetTypeActions_EncryptedAsset::GetThumbnailOverlay(
 
 FAssetTypeActions_EncryptedAsset::FAssetTypeActions_EncryptedAsset(const TSharedRef<IAssetTypeActions>& InInner): Inner(InInner)
 {
-	UE_LOG(LogTemp, Display, TEXT("FAssetTypeActions_EncryptedAsset::FAssetTypeActions_EncryptedAsset"));
+	//UE_LOG(LogTemp, Display, TEXT("FAssetTypeActions_EncryptedAsset::FAssetTypeActions_EncryptedAsset"));
 }
 
 void FAssetTypeActions_EncryptedAsset::OpenAssetEditor(const TArray<UObject*>& InObjects, TSharedPtr<IToolkitHost> Host)

@@ -34,7 +34,7 @@ bool FBSGuardCrypto::IsEncryptedAssetFile(const FString& FilePath)
 
     if (!FPaths::FileExists(AbsolutePath))
     {
-        //UE_LOG(LogTemp, Warning, TEXT("[IsEncryptedAssetFile] 文件不存在：%s"), *AbsolutePath);
+        UE_LOG(LogTemp, Warning, TEXT("[IsEncryptedAssetFile] 文件不存在：%s"), *AbsolutePath);
         return false;
     }
     
@@ -256,6 +256,30 @@ bool FBSGuardCrypto::Decrypt(const TArray<uint8>& InCipher, TArray<uint8>& OutPl
 bool FBSGuardCrypto::GenRandomBytes(uint8* Out, int32 Num)
 {
     return RAND_bytes(Out, Num) == 1;
+}
+
+bool FBSGuardCrypto::ShouldEncryptAsset(const FString& FilePath)
+{
+	FString AbsPath = FPaths::ConvertRelativePathToFull(FilePath);
+	FString EngineDir = FPaths::ConvertRelativePathToFull(FPaths::EngineDir());
+	FString SavedDir = FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir());
+	if (AbsPath.StartsWith(EngineDir) || AbsPath.Contains(TEXT("/Engine/")) || AbsPath.StartsWith(SavedDir))
+	{
+		// Skip engine content to avoid corrupting built-in assets
+		return false;
+	}
+
+	bool bIsAssetFile = FilePath.EndsWith(TEXT(".uasset")) ||
+						FilePath.EndsWith(TEXT(".uexp")) ||
+						FilePath.EndsWith(TEXT(".ubulk"));
+	if (!bIsAssetFile)
+	{
+		return false;
+	}
+
+	
+
+	return true;
 }
 
 

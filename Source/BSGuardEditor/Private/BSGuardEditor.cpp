@@ -89,6 +89,10 @@ void FBSGE_AssetActions::RegisterAssetTypeAction()
 	// 注册保存包事件，以在资产保存后自动加密
 	UPackage::PackageSavedWithContextEvent.AddStatic([](const FString& PackageFileName, UPackage* Package, FObjectPostSaveContext Context)
 	{
+		if (!FBSGuardCrypto::ShouldEncryptAsset(PackageFileName))
+		{
+			return;
+		}
 		if (!BSGEncrypt::IsPackageEncrypted(Package))
 		{
 			return;
@@ -139,6 +143,10 @@ void FBSGE_AssetActions::CreateAssetContextMenu(FMenuBuilder& MenuBuilder, const
 	{
 		FString AssetFilePath = AssetData.PackageName.ToString();
 		AssetFilePath = FPackageName::LongPackageNameToFilename(AssetFilePath, FPackageName::GetAssetPackageExtension());
+		if (!FBSGuardCrypto::ShouldEncryptAsset(AssetFilePath))
+		{
+			continue;
+		}
 		// 检查该资产文件是否已加密
 		if (FBSGuardCrypto::IsEncryptedAssetFile(AssetFilePath))
 		{

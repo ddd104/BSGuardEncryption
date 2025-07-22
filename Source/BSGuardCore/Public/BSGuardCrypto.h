@@ -24,6 +24,7 @@ public:
 
 	static bool GenRandomBytes(uint8* Out, int32 Num);
 
+	BSGUARDCORE_API static bool ShouldEncryptAsset(const FString& FilePath);
 private:
 	static bool bKeyIsSet;
 	// 当前使用的对称密钥和有效性
