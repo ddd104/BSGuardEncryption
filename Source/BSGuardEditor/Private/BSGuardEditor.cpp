@@ -379,14 +379,6 @@ const FString& FBSGuardEditorModule::ChooseHeaderExt(const FAssetData& AD)
 
 void FBSGuardEditorModule::StartupModule()
 {
-	FString ContentDir = IPluginManager::Get().FindPlugin(TEXT("BSGuardEncryption"))->GetBaseDir() / TEXT("Resources");
-	FSlateStyleSet* StyleSet = new FSlateStyleSet("GuardEncryptionStyle");
-	StyleSet->SetContentRoot(ContentDir);
-	StyleSet->Set("GuardEncryption.LockIcon16", new FSlateImageBrush(StyleSet->RootToContentDir(TEXT("LockIcon16.png")), FVector2D(16,16)));
-	StyleSet->Set("GuardEncryption.LockIcon64", new FSlateImageBrush(StyleSet->RootToContentDir(TEXT("LockIcon64.png")), FVector2D(64,64)));
-	FSlateStyleRegistry::RegisterSlateStyle(*StyleSet);
-	
-	
 	// 注册内容浏览器菜单扩展
 	FBSGE_AssetActions::RegisterAssetActions();
 	

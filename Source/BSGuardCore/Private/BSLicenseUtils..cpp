@@ -85,7 +85,7 @@ bool FBSLicenseUtils::LoadLicense(const FString& FilePath, FBSLicenseData& OutDa
 	{
 #if WITH_CanPackageWithoutLicense == 1
 		//UE_LOG(LogTemp, Warning, TEXT("Failed to read license file: %s"), *FilePath);
-#elif
+#else
 		UE_LOG(LogTemp, Error, TEXT("Failed to read license file: %s"), *FilePath);
 #endif
 		return false;
