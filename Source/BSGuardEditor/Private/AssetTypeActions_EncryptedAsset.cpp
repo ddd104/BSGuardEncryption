@@ -203,6 +203,7 @@ uint32 FAssetTypeActions_EncryptedAsset::GetCategories()
 
 bool FAssetTypeActions_EncryptedAsset::ShouldForceWorldCentric()
 {
+	
 	return Inner->ShouldForceWorldCentric();
 }
 
@@ -213,7 +214,7 @@ bool FAssetTypeActions_EncryptedAsset::IsOpenAllowed() const
 
 #if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION == 27
 
-#elif #if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 0
+#elif ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 0
 FName FAssetTypeActions_EncryptedAsset::GetFilterName() const
 {
 	return Inner->GetFilterName();

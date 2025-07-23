@@ -45,8 +45,8 @@ public:
 	virtual bool ShouldForceWorldCentric() override;
 	
 #if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION == 27
-
-#elif #if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 0
+	
+#elif ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 0
 	virtual bool IsAssetDefinitionInDisguise() const override;
 	virtual bool ShouldCallGetActions() const override;
 	virtual void OpenAssetEditor(const TArray<UObject*>& InObjects, const EAssetTypeActivationOpenedMethod OpenedMethod,
