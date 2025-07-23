@@ -17,7 +17,7 @@
 	"Modules": [
 		{
 			"Name": "BSGuardCore",
-			"Type": "Runtime",
+			"Type": "Editor",
 			"LoadingPhase": "PreEarlyLoadingScreen",
 			"bCanBeUsedWithEditorCommandlets": true,
 			"PreloadDependencies": [ "AssetRegistry" ],

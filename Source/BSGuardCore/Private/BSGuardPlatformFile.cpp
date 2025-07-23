@@ -104,7 +104,13 @@ bool FBSGuardPlatformFile::IterateDirectoryStat(const TCHAR* Directory, FDirecto
 
 bool FBSGuardPlatformFile::Initialize(IPlatformFile* Inner, const TCHAR* Name)
 {
-	if (Inner == nullptr) return false;
+	UE_LOG(LogTemp, Log, TEXT("FBSGuardPlatformFile::Initialize"));
+	if (Inner == nullptr)
+	{
+		UE_LOG(LogTemp, Error, TEXT("FBSGuardPlatformFile::Initialize: Inner is nullptr"));
+		return false;
+	}
+	UE_LOG(LogTemp, Log, TEXT("FBSGuardPlatformFile::Initialize "));
 	LowerLevel = Inner;
 	return true;
 }

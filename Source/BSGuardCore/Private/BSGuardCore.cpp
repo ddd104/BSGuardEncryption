@@ -59,7 +59,7 @@ IPlatformFile* FBSGuardCoreModule::GetPlatformFile()
 
 void FBSGuardCoreModule::StartupModule()
 {
-	
+	UE_LOG(LogTemp, Warning, TEXT("BSGuardPF StartupModule BEGIN"));
 }
 
 void FBSGuardCoreModule::ShutdownModule()

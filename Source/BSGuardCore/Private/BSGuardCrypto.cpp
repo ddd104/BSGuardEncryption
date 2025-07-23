@@ -276,9 +276,6 @@ bool FBSGuardCrypto::ShouldEncryptAsset(const FString& FilePath)
 	{
 		return false;
 	}
-
-	
-
 	return true;
 }
 
