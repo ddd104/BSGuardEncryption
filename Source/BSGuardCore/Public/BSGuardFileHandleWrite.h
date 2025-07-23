@@ -27,8 +27,11 @@ public:
         // 不支持截断
         return false;
     }
-
+#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION == 27
+    
+#else ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 0
     virtual bool ReadAt(uint8* Destination, int64 BytesToRead, int64 Offset) override;
+#endif
     
 private:
     IFileHandle* InnerHandle;

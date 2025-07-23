@@ -143,8 +143,11 @@ bool FBSGuardPlatformFile::FBSGuardFileHandleWrite::Flush(const bool bFullFlush)
 	// Flush underlying handle
 	return InnerHandle->Flush(bFullFlush);
 }
-
+#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION == 27
+    
+#else ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 0
 bool FBSGuardPlatformFile::FBSGuardFileHandleWrite::ReadAt(uint8* Destination, int64 BytesToRead, int64 Offset)
 {
 	return false;
 }
+#endif

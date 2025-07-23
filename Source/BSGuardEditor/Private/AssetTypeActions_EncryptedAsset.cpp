@@ -22,42 +22,6 @@ FAssetTypeActions_EncryptedAsset::FAssetTypeActions_EncryptedAsset(const TShared
 
 void FAssetTypeActions_EncryptedAsset::OpenAssetEditor(const TArray<UObject*>& InObjects, TSharedPtr<IToolkitHost> Host)
 {
-
-	Inner->OpenAssetEditor(InObjects, Host);
-}
-
-FAssetTypeActions_EncryptedAsset::~FAssetTypeActions_EncryptedAsset()
-{
-}
-
-bool FAssetTypeActions_EncryptedAsset::HasActions(const TArray<UObject*>& InObjects) const
-{
-	return Inner->HasActions(InObjects);
-}
-
-void FAssetTypeActions_EncryptedAsset::GetActions(const TArray<UObject*>& InObjects, FMenuBuilder& MenuBuilder)
-{
-	Inner->GetActions(InObjects, MenuBuilder);
-}
-
-void FAssetTypeActions_EncryptedAsset::GetActions(const TArray<UObject*>& InObjects, FToolMenuSection& Section)
-{
-	Inner->GetActions(InObjects, Section);
-}
-
-bool FAssetTypeActions_EncryptedAsset::IsAssetDefinitionInDisguise() const
-{
-	return Inner->IsAssetDefinitionInDisguise();
-}
-
-bool FAssetTypeActions_EncryptedAsset::ShouldCallGetActions() const
-{
-	return Inner->ShouldCallGetActions();
-}
-
-void FAssetTypeActions_EncryptedAsset::OpenAssetEditor(const TArray<UObject*>& InObjects,
-	const EAssetTypeActivationOpenedMethod OpenedMethod, TSharedPtr<IToolkitHost> EditWithinLevelEditor)
-{
 	UE_LOG(LogTemp, Display, TEXT("FAssetTypeActions_EncryptedAsset::OpenAssetEditor"));
 	TArray<UObject*> MakeOpenObjects;
 	for (UObject* Asset : InObjects)
@@ -99,17 +63,26 @@ void FAssetTypeActions_EncryptedAsset::OpenAssetEditor(const TArray<UObject*>& I
 			MakeOpenObjects.Add(Asset);
 		}
 	}
-	Inner->OpenAssetEditor(MakeOpenObjects, OpenedMethod, EditWithinLevelEditor);
+	Inner->OpenAssetEditor(MakeOpenObjects, Host);
 }
 
-bool FAssetTypeActions_EncryptedAsset::CanRename(const FAssetData& InAsset, FText* OutErrorMsg) const
+FAssetTypeActions_EncryptedAsset::~FAssetTypeActions_EncryptedAsset()
 {
-	return Inner->CanRename(InAsset, OutErrorMsg);
 }
 
-bool FAssetTypeActions_EncryptedAsset::CanDuplicate(const FAssetData& InAsset, FText* OutErrorMsg) const
+bool FAssetTypeActions_EncryptedAsset::HasActions(const TArray<UObject*>& InObjects) const
 {
-	return Inner->CanDuplicate(InAsset, OutErrorMsg);
+	return Inner->HasActions(InObjects);
+}
+
+void FAssetTypeActions_EncryptedAsset::GetActions(const TArray<UObject*>& InObjects, FMenuBuilder& MenuBuilder)
+{
+	Inner->GetActions(InObjects, MenuBuilder);
+}
+
+void FAssetTypeActions_EncryptedAsset::GetActions(const TArray<UObject*>& InObjects, FToolMenuSection& Section)
+{
+	Inner->GetActions(InObjects, Section);
 }
 
 TArray<FAssetData> FAssetTypeActions_EncryptedAsset::GetValidAssetsForPreviewOrEdit(
@@ -192,23 +165,6 @@ FText FAssetTypeActions_EncryptedAsset::GetDisplayNameFromAssetData(const FAsset
 	return Inner->GetDisplayNameFromAssetData(AssetData);
 }
 
-bool FAssetTypeActions_EncryptedAsset::SupportsOpenedMethod(const EAssetTypeActivationOpenedMethod OpenedMethod) const
-{
-	return Inner->SupportsOpenedMethod(OpenedMethod);
-}
-
-const FSlateBrush* FAssetTypeActions_EncryptedAsset::GetThumbnailBrush(const FAssetData& InAssetData,
-	const FName InClassName) const
-{
-	return Inner->GetThumbnailBrush(InAssetData, InClassName);
-}
-
-const FSlateBrush* FAssetTypeActions_EncryptedAsset::GetIconBrush(const FAssetData& InAssetData,
-	const FName InClassName) const
-{
-	return Inner->GetIconBrush(InAssetData, InClassName);
-}
-
 bool FAssetTypeActions_EncryptedAsset::CanFilter()
 {
 	return Inner->CanFilter();
@@ -235,11 +191,6 @@ bool FAssetTypeActions_EncryptedAsset::AssetsActivatedOverride(const TArray<UObj
 	return Inner->AssetsActivatedOverride(InObjects, ActivationType);
 }
 
-FName FAssetTypeActions_EncryptedAsset::GetFilterName() const
-{
-	return Inner->GetFilterName();
-}
-
 bool FAssetTypeActions_EncryptedAsset::CanLocalize() const
 {
 	return Inner->CanLocalize();
@@ -255,12 +206,105 @@ bool FAssetTypeActions_EncryptedAsset::ShouldForceWorldCentric()
 	return Inner->ShouldForceWorldCentric();
 }
 
+bool FAssetTypeActions_EncryptedAsset::IsOpenAllowed() const
+{
+	return FBSGuardCrypto::HasValidKey();
+}
+
+#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION == 27
+
+#elif #if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 0
+FName FAssetTypeActions_EncryptedAsset::GetFilterName() const
+{
+	return Inner->GetFilterName();
+}
+
 FTopLevelAssetPath FAssetTypeActions_EncryptedAsset::GetClassPathName() const
 {
 	return Inner->GetClassPathName();
 }
 
-bool FAssetTypeActions_EncryptedAsset::IsOpenAllowed() const
+bool FAssetTypeActions_EncryptedAsset::SupportsOpenedMethod(const EAssetTypeActivationOpenedMethod OpenedMethod) const
 {
-	return FBSGuardCrypto::HasValidKey();
+	return Inner->SupportsOpenedMethod(OpenedMethod);
 }
+
+const FSlateBrush* FAssetTypeActions_EncryptedAsset::GetThumbnailBrush(const FAssetData& InAssetData,
+	const FName InClassName) const
+{
+	return Inner->GetThumbnailBrush(InAssetData, InClassName);
+}
+
+const FSlateBrush* FAssetTypeActions_EncryptedAsset::GetIconBrush(const FAssetData& InAssetData,
+	const FName InClassName) const
+{
+	return Inner->GetIconBrush(InAssetData, InClassName);
+}
+
+bool FAssetTypeActions_EncryptedAsset::CanRename(const FAssetData& InAsset, FText* OutErrorMsg) const
+{
+	return Inner->CanRename(InAsset, OutErrorMsg);
+}
+
+bool FAssetTypeActions_EncryptedAsset::CanDuplicate(const FAssetData& InAsset, FText* OutErrorMsg) const
+{
+	return Inner->CanDuplicate(InAsset, OutErrorMsg);
+}
+
+bool FAssetTypeActions_EncryptedAsset::IsAssetDefinitionInDisguise() const
+{
+	return Inner->IsAssetDefinitionInDisguise();
+}
+
+bool FAssetTypeActions_EncryptedAsset::ShouldCallGetActions() const
+{
+	return Inner->ShouldCallGetActions();
+}
+
+void FAssetTypeActions_EncryptedAsset::OpenAssetEditor(const TArray<UObject*>& InObjects,
+	const EAssetTypeActivationOpenedMethod OpenedMethod, TSharedPtr<IToolkitHost> EditWithinLevelEditor)
+{
+	UE_LOG(LogTemp, Display, TEXT("FAssetTypeActions_EncryptedAsset::OpenAssetEditor"));
+	TArray<UObject*> MakeOpenObjects;
+	for (UObject* Asset : InObjects)
+	{
+		const FString& PackageExt = FBSGuardEditorModule::ChooseHeaderExt(Asset);
+		FString AssetPath = FPackageName::LongPackageNameToFilename(Asset->GetPackage()->GetName(), PackageExt);
+        
+		FILE* File = nullptr;
+		fopen_s(&File, TCHAR_TO_ANSI(*AssetPath), "rb");
+
+		if (!File)
+		{
+			if (!BSGEncrypt::IsObjectEncrypted(Asset))
+			{
+				MakeOpenObjects.Add(Asset);
+			}
+			else
+			{
+				if (IsOpenAllowed())
+				{
+					MakeOpenObjects.Add(Asset);
+				}
+			}
+			continue;
+		}
+		char Magic[4];
+		fread(Magic, 1, 4, File);
+		fclose(File);
+
+		const bool bIsEncrypted = FMemory::Memcmp(Magic, "BSGE", 4) == 0;
+		if (!bIsEncrypted)
+		{
+			MakeOpenObjects.Add(Asset);
+			continue;
+		}
+		if (IsOpenAllowed())
+		{
+			//FMessageDialog::Open(EAppMsgType::Ok, FText::FromString("Failed to pass verification, refused to open this asset."));
+			MakeOpenObjects.Add(Asset);
+		}
+	}
+	Inner->OpenAssetEditor(MakeOpenObjects, OpenedMethod, EditWithinLevelEditor);
+}
+#endif

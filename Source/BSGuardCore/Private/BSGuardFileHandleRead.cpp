@@ -76,8 +76,13 @@ bool FBSGuardPlatformFile::FBSGuardFileHandleRead::Write(const uint8* Source, in
 	// 读取句柄不支持写
 	return false;
 }
-
+#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION == 27
+    
+#else ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 0
 bool FBSGuardPlatformFile::FBSGuardFileHandleRead::ReadAt(uint8* Destination, int64 BytesToRead, int64 Offset)
 {
 	return false;
 }
+#endif
+
+

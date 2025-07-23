@@ -312,7 +312,13 @@ namespace BSGEncrypt
 
 		if (IInterface_AssetUserData* AUDOwner = Cast<IInterface_AssetUserData>(MainAsset))
 		{
+#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION == 27
+			check(UBSGEncryptUserData::StaticClass() != nullptr);
+			AUDOwner->AddAssetUserData(NewObject<UAssetUserData>(AUDOwner->_getUObject(), UBSGEncryptUserData::StaticClass()));
+#elif ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 0  
 			AUDOwner->AddAssetUserDataOfClass(UBSGEncryptUserData::StaticClass());
+#endif
+			
 			Pkg->MarkPackageDirty();
 			MainAsset->Modify();
 		}

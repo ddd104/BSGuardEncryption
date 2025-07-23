@@ -14,11 +14,12 @@
 #include "Misc/MessageDialog.h"
 #include "Styling/SlateStyleRegistry.h"
 #include "UObject/Package.h"
-#include "UObject/ObjectSaveContext.h"
+#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION == 27
 
-#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 6
+#elif ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 0 && ENGINE_MINOR_VERSION < 6
+#include "UObject/ObjectSaveContext.h"
+#elif ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 6
 #include "UObject/SavePackage.h"
-#else
 #endif
 
 
@@ -87,32 +88,64 @@ void FBSGE_AssetActions::RegisterAssetTypeAction()
 	}
 	
 	// 注册保存包事件，以在资产保存后自动加密
-	UPackage::PackageSavedWithContextEvent.AddStatic([](const FString& PackageFileName, UPackage* Package, FObjectPostSaveContext Context)
-	{
-		if (!FBSGuardCrypto::ShouldEncryptAsset(PackageFileName))
+#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION == 27
+	UPackage::PackageSavedEvent.AddStatic([](const FString& PackageFileName, UObject* Object)
 		{
-			return;
-		}
-		if (!BSGEncrypt::IsPackageEncrypted(Package))
-		{
-			return;
-		}
-		
-		// 当一个资产包保存成功后触发
-		if (FBSGuardCrypto::IsEncryptedAssetFile(PackageFileName) == false)
-		{
-			Package->SetPackageFlags(PKG_DisallowExport);
-			// 如果存在有效密钥，且当前保存的是未加密文件，将其加密
-			if (FBSGuardCrypto::EncryptFile(PackageFileName))
+			check(Object)
+			UPackage* Package = Object->GetPackage();
+			if (!FBSGuardCrypto::ShouldEncryptAsset(PackageFileName))
 			{
-				UE_LOG(LogTemp, Log, TEXT("Encrypted asset on save: %s, ackageFlags: %d"), *PackageFileName, Package->GetPackageFlags());
+				return;
 			}
-		}
-		else
+			if (!BSGEncrypt::IsPackageEncrypted(Package))
+			{
+				return;
+			}
+		
+			// 当一个资产包保存成功后触发
+			if (FBSGuardCrypto::IsEncryptedAssetFile(PackageFileName) == false)
+			{
+				Package->SetPackageFlags(PKG_DisallowExport);
+				// 如果存在有效密钥，且当前保存的是未加密文件，将其加密
+				if (FBSGuardCrypto::EncryptFile(PackageFileName))
+				{
+					UE_LOG(LogTemp, Log, TEXT("Encrypted asset on save: %s, ackageFlags: %d"), *PackageFileName, Package->GetPackageFlags());
+				}
+			}
+			else
+			{
+				Package->ClearPackageFlags(PKG_DisallowExport);
+			}
+		});
+#elif ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 0
+	UPackage::PackageSavedWithContextEvent.AddStatic([](const FString& PackageFileName, UPackage* Package, FObjectPostSaveContext Context)
 		{
-			Package->ClearPackageFlags(PKG_DisallowExport);
-		}
-	});
+			if (!FBSGuardCrypto::ShouldEncryptAsset(PackageFileName))
+			{
+				return;
+			}
+			if (!BSGEncrypt::IsPackageEncrypted(Package))
+			{
+				return;
+			}
+		
+			// 当一个资产包保存成功后触发
+			if (FBSGuardCrypto::IsEncryptedAssetFile(PackageFileName) == false)
+			{
+				Package->SetPackageFlags(PKG_DisallowExport);
+				// 如果存在有效密钥，且当前保存的是未加密文件，将其加密
+				if (FBSGuardCrypto::EncryptFile(PackageFileName))
+				{
+					UE_LOG(LogTemp, Log, TEXT("Encrypted asset on save: %s, ackageFlags: %d"), *PackageFileName, Package->GetPackageFlags());
+				}
+			}
+			else
+			{
+				Package->ClearPackageFlags(PKG_DisallowExport);
+			}
+		});
+#endif
+	
 }
 
 void FBSGE_AssetActions::UnregisterAssetTypeAction()
@@ -163,10 +196,16 @@ void FBSGE_AssetActions::CreateAssetContextMenu(FMenuBuilder& MenuBuilder, const
 	if (HasDecryptButton)
 	{
 		// **解密** 菜单项
+#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION == 27
+		FSlateIcon UnlockIcon(FEditorStyle::GetStyleSetName(), "Icons.Unlock");
+#elif ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 0 
+		FSlateIcon UnlockIcon(FAppStyle::GetAppStyleSetName(), "Icons.Unlock");
+#endif
+		
 		MenuBuilder.AddMenuEntry(
 			LOCTEXT("DecryptAssetLabel", "解密资产"),
 			LOCTEXT("DecryptAssetTooltip", "使用当前密钥解密此资产文件"),
-			FSlateIcon(FAppStyle::GetAppStyleSetName(), "Icons.Unlock"),  // 假设使用一个解锁图标
+			UnlockIcon,  // 假设使用一个解锁图标
 			FUIAction(
 				FExecuteAction::CreateLambda([NeedDecryptFiles]()
 				{
@@ -193,10 +232,16 @@ void FBSGE_AssetActions::CreateAssetContextMenu(FMenuBuilder& MenuBuilder, const
 	if (HasEncryptionButton)
 	{
 		// **加密** 菜单项
+#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION == 27
+		FSlateIcon lockIcon(FEditorStyle::GetStyleSetName(), "Icons.Lock");
+#elif ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 0 
+		FSlateIcon lockIcon(FAppStyle::GetAppStyleSetName(), "Icons.Lock");
+#endif
+		
 		MenuBuilder.AddMenuEntry(
 			LOCTEXT("EncryptAssetLabel", "加密资产"),
 			LOCTEXT("EncryptAssetTooltip", "使用当前密钥加密此资产文件"),
-			FSlateIcon(FAppStyle::GetAppStyleSetName(), "Icons.Lock"),  // 假设使用一个锁图标
+			lockIcon,  // 假设使用一个锁图标
 			FUIAction(
 				FExecuteAction::CreateLambda([NeedEncryptionFiles]()
 				{
@@ -358,10 +403,13 @@ FDelegateHandle FBSGE_AssetActions::ExtenderHandle;
 const FString& FBSGuardEditorModule::ChooseHeaderExt(const FAssetData& AD)
 {
 	// ① 是否是关卡（UWorld）？
+#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION == 27
+	const bool bIsWorld = (AD.AssetClass == UWorld::StaticClass()->GetFName());
+#elif ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 0
 	const bool bIsWorld = (AD.AssetClassPath == UWorld::StaticClass()->GetClassPathName());
-
+#endif
 	// ② 项目当前是否以文本格式保存包？（你也可以改成读 Editor 设置）
-	const bool bTextFormat = false;  // GetDefault<UEditorLoadingSavingSettings>();
+	const bool bTextFormat = false;
 
 	if (bIsWorld)
 	{
