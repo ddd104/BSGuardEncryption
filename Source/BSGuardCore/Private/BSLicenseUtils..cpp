@@ -83,7 +83,11 @@ bool FBSLicenseUtils::LoadLicense(const FString& FilePath, FBSLicenseData& OutDa
 	TArray<uint8> Bytes;
 	if (!FFileHelper::LoadFileToArray(Bytes, *FilePath))
 	{
+#if WITH_CanPackageWithoutLicense == 1
+		//UE_LOG(LogTemp, Warning, TEXT("Failed to read license file: %s"), *FilePath);
+#elif
 		UE_LOG(LogTemp, Error, TEXT("Failed to read license file: %s"), *FilePath);
+#endif
 		return false;
 	}
 

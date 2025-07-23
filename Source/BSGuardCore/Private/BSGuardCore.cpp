@@ -48,8 +48,9 @@ public:
 	TSharedPtr<class FBSGuardSettings> BSGuardSettings;
 };  
 
-
+#if WITH_CanPackagingWithEncryption == 1
 static FBSGE_EarlyInstaller BSGE_PlatformFileAutoInstaller;
+#endif
 
 IPlatformFile* FBSGuardCoreModule::GetPlatformFile()
 {
@@ -59,7 +60,9 @@ IPlatformFile* FBSGuardCoreModule::GetPlatformFile()
 
 void FBSGuardCoreModule::StartupModule()
 {
-	UE_LOG(LogTemp, Warning, TEXT("BSGuardPF StartupModule BEGIN"));
+#if WITH_CanPackagingWithEncryption == 0
+	static FBSGE_EarlyInstaller BSGE_PlatformFileAutoInstaller;
+#endif
 }
 
 void FBSGuardCoreModule::ShutdownModule()

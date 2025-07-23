@@ -23,7 +23,9 @@ public class BSGuardCore : ModuleRules
         }
         // 让 UBT 对所有 Target 预编译
         PrecompileForTargets = PrecompileTargetsType.Any;
-
+        
+        bPrecompile = false;
+        
         PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
 		OptimizeCode = CodeOptimization.Never;
 		PublicDependencyModuleNames.AddRange(
@@ -79,5 +81,10 @@ public class BSGuardCore : ModuleRules
 		RuntimeDependencies.Add(Path.Combine(PluginDir, "../../license/License.license"));
 		RuntimeDependencies.Add(Path.Combine(PluginDir, "../../license/root_public.pem"));
 		RuntimeDependencies.Add(Path.Combine(PluginDir, "../../license/SharedKey"));
+		
+		// 
+		PublicDefinitions.Add("WITH_CanPackageWithoutLicense=1");
+		PublicDefinitions.Add("WITH_CanPackagingWithEncryption=1");
 	}
+	
 }
