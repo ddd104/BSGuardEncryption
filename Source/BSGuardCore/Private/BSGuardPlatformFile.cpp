@@ -127,6 +127,10 @@ IFileHandle* FBSGuardPlatformFile::OpenRead(const TCHAR* Filename, bool bAllowWr
 		{
 			return nullptr;
 		}
+		if (!FBSGuardCrypto::IsValidAction())
+		{
+			return nullptr;
+		}
 		return new FBSGuardFileHandleRead(InnerHandle);
 	}
 	// 对于不拦截的文件，直接调用底层
@@ -147,6 +151,10 @@ IFileHandle* FBSGuardPlatformFile::OpenWrite(const TCHAR* Filename, bool bAppend
 		// 我们将创建自定义句柄以在写入过程中加密数据
 		IFileHandle* InnerHandle = LowerLevel->OpenWrite(Filename, false, bAllowRead);
 		if (!InnerHandle)
+		{
+			return nullptr;
+		}
+		if (!FBSGuardCrypto::IsValidAction())
 		{
 			return nullptr;
 		}

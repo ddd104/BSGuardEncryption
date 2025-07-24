@@ -47,8 +47,10 @@ private:
 	static TSharedRef<FExtender> MakeMigrateEncryptedAssets(const TArray<FAssetData>& SelectedAssets);
 private:
 	static FDelegateHandle ExtenderHandle;
+	static TArray<TSharedPtr<FAssetTypeActions_EncryptedAsset>> GuardAssetActions;
 };
 
+TArray<TSharedPtr<FAssetTypeActions_EncryptedAsset>> FBSGE_AssetActions::GuardAssetActions;
 
 void FBSGE_AssetActions::RegisterAssetActions()
 {
@@ -84,8 +86,30 @@ void FBSGE_AssetActions::RegisterAssetTypeAction()
 	for (auto& AssetTypeAction : OutAssetTypeActionsList)
 	{
 		TSharedPtr<FAssetTypeActions_EncryptedAsset> GuardAssetAction = MakeShareable(new FAssetTypeActions_EncryptedAsset(AssetTypeAction.Pin().ToSharedRef()));
+		GuardAssetActions.Emplace(GuardAssetAction);
 		AssetTools.RegisterAssetTypeActions(GuardAssetAction.ToSharedRef());
 	}
+
+	FBSGuardCrypto::bRetBoolDelegate.BindLambda(
+		[]()->bool
+		{
+			IAssetTools& Tools = FModuleManager::LoadModuleChecked<FAssetToolsModule>("AssetTools").Get();
+			
+			for (auto& AssetTypeAction : GuardAssetActions)
+			{
+				UClass* TargetClass = AssetTypeAction->GetSupportedClass();
+
+				TSharedPtr<IAssetTypeActions> Active = Tools.GetAssetTypeActionsForClass(TargetClass).Pin();
+
+				if (Active == AssetTypeAction)          // 指针相等 ⇒ 当前引擎用的就是这一条
+				{
+					return true;
+				}
+			}
+			// *指针相等* ⇒ 说明当前引擎正使用你的实现
+			return false;
+		}
+	);
 	
 	// 注册保存包事件，以在资产保存后自动加密
 #if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION == 27

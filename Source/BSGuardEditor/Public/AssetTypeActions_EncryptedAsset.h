@@ -1,7 +1,7 @@
 ﻿#pragma once
 #include "AssetTypeActions_Base.h"
 
-class FAssetTypeActions_EncryptedAsset : public FAssetTypeActions_Base
+class FAssetTypeActions_EncryptedAsset final: public FAssetTypeActions_Base
 {
 public:
 	FAssetTypeActions_EncryptedAsset(const TSharedRef<IAssetTypeActions>& InInner);

@@ -2,6 +2,9 @@
 #include "CoreMinimal.h"
 #include "BSGuardCrypto.generated.h"
 
+
+DECLARE_DELEGATE_RetVal(bool, FRetBoolDelegate);
+
 #if WITH_EDITOR
 	class FBSGE_AssetActions;
 #endif
@@ -23,7 +26,7 @@ public:
 	static bool Decrypt(const TArray<uint8>& EncryptedData, TArray<uint8>& OutPlainData);
 
 	static bool GenRandomBytes(uint8* Out, int32 Num);
-
+	static bool IsValidAction();
 	BSGUARDCORE_API static bool ShouldEncryptAsset(const FString& FilePath);
 private:
 	static bool bKeyIsSet;
@@ -31,9 +34,10 @@ private:
 	static uint8 Key[32];
 	// 对指定文件进行AES-GCM加密，输出加密文件（覆盖原文件或创建新的）。
 	BSGUARDCORE_API static bool EncryptFile(const FString& FilePath);
-
 	// 对指定文件进行AES-GCM解密，还原为明文文件（覆盖原文件内容）。
 	BSGUARDCORE_API static bool DecryptFile(const FString& FilePath);
+
+	BSGUARDCORE_API static FRetBoolDelegate bRetBoolDelegate;
 #if WITH_EDITOR
 	friend class FBSGE_AssetActions;
 #endif

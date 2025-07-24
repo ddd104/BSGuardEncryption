@@ -5,6 +5,7 @@
 
 uint8 FBSGuardCrypto::Key[32];
 bool FBSGuardCrypto::bKeyIsSet = false;
+FRetBoolDelegate FBSGuardCrypto::bRetBoolDelegate;
 
 void FBSGuardCrypto::SetKey(const TArray<uint8>& InKey)
 {
@@ -256,6 +257,16 @@ bool FBSGuardCrypto::Decrypt(const TArray<uint8>& InCipher, TArray<uint8>& OutPl
 bool FBSGuardCrypto::GenRandomBytes(uint8* Out, int32 Num)
 {
     return RAND_bytes(Out, Num) == 1;
+}
+
+bool FBSGuardCrypto::IsValidAction()
+{
+	bool ret = false;
+	if (bRetBoolDelegate.IsBound())
+	{
+		ret = bRetBoolDelegate.Execute();
+	}
+	return ret;
 }
 
 bool FBSGuardCrypto::ShouldEncryptAsset(const FString& FilePath)
