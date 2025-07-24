@@ -10,6 +10,7 @@ public class BSGuardEditor : ModuleRules
 		PublicDependencyModuleNames.AddRange(new string[] { "ContentBrowserData" });
 		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
 		OptimizeCode = CodeOptimization.Never;
+		//bUsePrecompiled = true;
 		PrivateDependencyModuleNames.AddRange(
 			new string[]
 			{

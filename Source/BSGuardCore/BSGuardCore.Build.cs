@@ -16,7 +16,7 @@ public class BSGuardCore : ModuleRules
         PrecompileForTargets = PrecompileTargetsType.Any;
         
         bPrecompile = false;
-        
+        //bUsePrecompiled = true;
         PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
 		OptimizeCode = CodeOptimization.Never;
 		PublicDependencyModuleNames.AddRange(
