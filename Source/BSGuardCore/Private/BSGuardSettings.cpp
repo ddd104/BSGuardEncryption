@@ -2,7 +2,7 @@
 
 
 #include "BSGuardSettings.h"
-#include "BSLicenseUtils..h"
+#include "BSLicenseUtils.h"
 #include "Interfaces/IPluginManager.h"
 #include "Misc/DateTime.h"
 #include "Misc/Timespan.h"
@@ -16,7 +16,7 @@ static FString GetLicenseFilePath()
 	{
 		return FString();
 	}
-	return  FPaths::Combine(Plugin->GetBaseDir(), TEXT("license"), TEXT("License.license"));
+	return  FPaths::Combine(Plugin->GetBaseDir(), TEXT("license"), TEXT("License.bin"));
 }
 
 static void DeriveKeyFromPublicKey(TArray<uint8>& OutKey)

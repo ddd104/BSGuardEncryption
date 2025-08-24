@@ -1,6 +1,6 @@
 ﻿#include "BSGuardCrypto.h"
 #include "BSCommonDefinition.h"
-#include "BSLicenseUtils..h"
+#include "BSLicenseUtils.h"
 
 
 uint8 FBSGuardCrypto::Key[32];
@@ -84,6 +84,7 @@ bool FBSGuardCrypto::EncryptFile(const FString& FilePath)
         RawFile = &PlatFile;
     }
 
+	//RawFile->SetReadOnly(*FilePath, false);
     TUniquePtr<IFileHandle> FileHandle(RawFile->OpenWrite(*FilePath, false));
     if (!FileHandle || !FileHandle->Write(EncryptedData.GetData(), EncryptedData.Num()))
     {
@@ -116,6 +117,7 @@ bool FBSGuardCrypto::DecryptFile(const FString& FilePath)
     {
         RawFile = &PlatFile;
     }
+	//RawFile->SetReadOnly(*FilePath, false);
     TUniquePtr<IFileHandle> FileHandle(RawFile->OpenWrite(*FilePath, false));
     if (!FileHandle || !FileHandle->Write(FileData.GetData(), FileData.Num()))
     {
@@ -130,7 +132,7 @@ bool FBSGuardCrypto::DecryptFile(const FString& FilePath)
 bool FBSGuardCrypto::Encrypt(const TArray<uint8>& InPlain, TArray<uint8>& OutCipher)
 {
     const TArray<uint8>& SharedKey = FBSLicenseUtils::GetSharedKey();
-    if (SharedKey.Num() != 64)
+    if (SharedKey.Num() != 32)
     {
         UE_LOG(LogTemp, Error, TEXT("SharedKey invalid"));
         return false;
@@ -214,7 +216,7 @@ bool FBSGuardCrypto::Decrypt(const TArray<uint8>& InCipher, TArray<uint8>& OutPl
     const int32  DataLen = InCipher.Num() - MinSize;
 
     const TArray<uint8>& SharedKey = FBSLicenseUtils::GetSharedKey();
-    if (SharedKey.Num() != 64)
+    if (SharedKey.Num() != 32)
     {
         return false;
     }

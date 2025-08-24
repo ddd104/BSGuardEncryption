@@ -1,6 +1,6 @@
 ﻿#include "BSGuardFileHandleWrite.h"
 #include "BSGuardCrypto.h"
-#include "BSLicenseUtils..h"
+#include "BSLicenseUtils.h"
 
 FBSGuardPlatformFile::FBSGuardFileHandleWrite::FBSGuardFileHandleWrite(IFileHandle* InHandle): InnerHandle(InHandle)
 {

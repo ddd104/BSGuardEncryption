@@ -240,7 +240,7 @@ void FBSGE_AssetActions::CreateAssetContextMenu(FMenuBuilder& MenuBuilder, const
 						BSGEncrypt::MarkPackagePlain(Package);
 						const FString& PackageExt = FBSGuardEditorModule::ChooseHeaderExt(AssetData);
 						const FString FileName =FPackageName::LongPackageNameToFilename(Package->GetName(), PackageExt);
-						UPackage::SavePackage(Package, nullptr, RF_Standalone, *FileName);
+						UPackage::SavePackage(Package, nullptr, RF_Standalone, *FileName, nullptr, nullptr, false, true, SAVE_NoError);
 						Package->MarkPackageDirty();
 						DecryptSelectedAsset(AssetData);
 					}
@@ -276,7 +276,7 @@ void FBSGE_AssetActions::CreateAssetContextMenu(FMenuBuilder& MenuBuilder, const
 						BSGEncrypt::MarkPackageEncrypted(Package);
 						const FString& PackageExt = FBSGuardEditorModule::ChooseHeaderExt(AssetData);
 						const FString FileName =FPackageName::LongPackageNameToFilename(Package->GetName(), PackageExt);
-						UPackage::SavePackage(Package, nullptr, RF_Standalone, *FileName);
+						UPackage::SavePackage(Package, nullptr, RF_Standalone, *FileName, nullptr, nullptr, false, true, SAVE_NoError);
 						Package->MarkPackageDirty();
 						EncryptSelectedAsset(AssetData);
 					}
