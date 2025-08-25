@@ -9,6 +9,7 @@
 #include "BSGuardCrypto.h"
 #include "IContentBrowserSingleton.h"
 #include "ContentBrowserDelegates.h"
+#include "PackageTools.h"
 #include "AssetRegistry/AssetData.h"
 #include "Interfaces/IPluginManager.h"
 #include "Misc/MessageDialog.h"
@@ -343,24 +344,43 @@ void FBSGE_AssetActions::DecryptSelectedAsset(const FAssetData& AssetData)
 	if (Package)
 	{
 		Package->FullyLoad();
-		bool SaveState = false;
-#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 6
-		FSavePackageArgs SaveArgs;
-		SaveState = UPackage::SavePackage(Package, AssetData.GetAsset(), *AssetFilePath, SaveArgs);
-#else
-		SaveState = UPackage::SavePackage(Package, nullptr, RF_Public | RF_Standalone, *AssetFilePath, nullptr, nullptr, false, true, SAVE_NoError);
-#endif
-		if (!SaveState)
+
+		UAssetEditorSubsystem* EditorSubsystem = GEditor->GetEditorSubsystem<UAssetEditorSubsystem>();
+		// 关闭可能打开该资产的编辑器，避免文件占用
+		if (UObject* AssetObj = AssetData.GetAsset())
 		{
-			UE_LOG(LogTemp, Error, TEXT("SaveFile failed for asset %s, Decrypt interrupted"), *PackageName);
-			return;
+			EditorSubsystem->CloseAllEditorsForAsset(AssetObj);
 		}
+		ResetLoaders(Package);
 	}
+
+	IPlatformFile& PlatFile = FPlatformFileManager::Get().GetPlatformFile();
+	IPlatformFile* RawFile = PlatFile.GetLowerLevel();
+	if (!RawFile)
+	{
+		RawFile = &PlatFile;
+	}
+
+	RawFile->SetReadOnly(*AssetFilePath, false);
 	
 	// 执行解密
 	if (FBSGuardCrypto::DecryptFile(AssetFilePath))
 	{
 		UE_LOG(LogTemp, Display, TEXT("Asset %s decrypted."), *PackageName);
+
+		// 解密后，建议重新加载包以使内存状态与磁盘一致
+		if (Package)
+		{
+			// 卸载并重新加载
+			const TArray<UPackage*>& Packages = { Package };
+			UPackageTools::UnloadPackages(Packages);
+			UPackage* Reloaded = LoadPackage(nullptr, *PackageName, LOAD_None);
+			if (Reloaded)
+			{
+				Reloaded->FullyLoad();
+			}
+		}
+		
 		// 刷新浏览器
 		FContentBrowserModule* CBModule = FModuleManager::GetModulePtr<FContentBrowserModule>("ContentBrowser");
 		if (CBModule)

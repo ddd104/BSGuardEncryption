@@ -84,7 +84,7 @@ bool FBSGuardCrypto::EncryptFile(const FString& FilePath)
         RawFile = &PlatFile;
     }
 
-	//RawFile->SetReadOnly(*FilePath, false);
+	RawFile->SetReadOnly(*FilePath, false);
     TUniquePtr<IFileHandle> FileHandle(RawFile->OpenWrite(*FilePath, false));
     if (!FileHandle || !FileHandle->Write(EncryptedData.GetData(), EncryptedData.Num()))
     {
@@ -117,7 +117,7 @@ bool FBSGuardCrypto::DecryptFile(const FString& FilePath)
     {
         RawFile = &PlatFile;
     }
-	//RawFile->SetReadOnly(*FilePath, false);
+	RawFile->SetReadOnly(*FilePath, false);
     TUniquePtr<IFileHandle> FileHandle(RawFile->OpenWrite(*FilePath, false));
     if (!FileHandle || !FileHandle->Write(FileData.GetData(), FileData.Num()))
     {

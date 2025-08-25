@@ -11,7 +11,9 @@ FBSGuardPlatformFile::~FBSGuardPlatformFile()
 {}
 
 IPlatformFile* FBSGuardPlatformFile::GetLowerLevel()
-{ return LowerLevel; }
+{
+	return LowerLevel;
+}
 
 const TCHAR* FBSGuardPlatformFile::GetName() const
 { return TEXT("GuardPlatformFile"); }
