@@ -11,6 +11,7 @@
 #include "ContentBrowserDelegates.h"
 #include "PackageTools.h"
 #include "AssetRegistry/AssetData.h"
+#include "AssetRegistry/AssetRegistryModule.h"
 #include "Interfaces/IPluginManager.h"
 #include "Misc/MessageDialog.h"
 #include "Styling/SlateStyleRegistry.h"
@@ -52,6 +53,28 @@ private:
 };
 
 TArray<TSharedPtr<FAssetTypeActions_EncryptedAsset>> FBSGE_AssetActions::GuardAssetActions;
+
+void ScanEncryptedAssets()
+{
+	TArray<FString> FoundFiles;
+	const FString ContentDir = FPaths::ProjectContentDir();
+	IFileManager::Get().FindFilesRecursive(FoundFiles, *ContentDir, TEXT("*.uasset"), true, false);
+
+	TArray<FString> EncryptedFiles;
+	for (const FString& File : FoundFiles)
+	{
+		if (FBSGuardCrypto::IsEncryptedAssetFile(File))
+		{
+			EncryptedFiles.Add(File);
+		}
+	}
+
+	if (EncryptedFiles.Num() > 0)
+	{
+		FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
+		AssetRegistryModule.Get().ScanFilesSynchronous(EncryptedFiles);
+	}
+}
 
 void FBSGE_AssetActions::RegisterAssetActions()
 {
@@ -367,19 +390,6 @@ void FBSGE_AssetActions::DecryptSelectedAsset(const FAssetData& AssetData)
 	if (FBSGuardCrypto::DecryptFile(AssetFilePath))
 	{
 		UE_LOG(LogTemp, Display, TEXT("Asset %s decrypted."), *PackageName);
-
-		// 解密后，建议重新加载包以使内存状态与磁盘一致
-		if (Package)
-		{
-			// 卸载并重新加载
-			const TArray<UPackage*>& Packages = { Package };
-			UPackageTools::UnloadPackages(Packages);
-			UPackage* Reloaded = LoadPackage(nullptr, *PackageName, LOAD_None);
-			if (Reloaded)
-			{
-				Reloaded->FullyLoad();
-			}
-		}
 		
 		// 刷新浏览器
 		FContentBrowserModule* CBModule = FModuleManager::GetModulePtr<FContentBrowserModule>("ContentBrowser");
@@ -477,6 +487,8 @@ void FBSGuardEditorModule::StartupModule()
 	// 注册加密AssetTypeAction
 	FBSGE_AssetActions::RegisterAssetTypeAction();
 
+	ScanEncryptedAssets();
+	
 }
 
 void FBSGuardEditorModule::ShutdownModule()
