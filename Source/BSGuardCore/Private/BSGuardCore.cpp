@@ -15,12 +15,12 @@ struct FBSGE_EarlyInstaller
 	FBSGE_EarlyInstaller()
 	{
 		UE_LOG(LogTemp, Display, TEXT("FBSGE_EarlyInstaller"));
-		// 保存原始平台文件指针
+		// Save the original platform file pointer
 		OriginalPlatformFile = &FPlatformFileManager::Get().GetPlatformFile();
-		// 创建我们的自定义平台文件并初始化
+		// Create our custom platform file and initialize
 		GuardPlatformFile = MakeUnique<FBSGuardPlatformFile>();
 		GuardPlatformFile->Initialize(OriginalPlatformFile, TEXT("BSGuardPlatformFile"));
-		// 用GuardPlatformFile替换当前平台文件，使其成为顶层
+		// Replace the current platform file with GuardPlatformFile, making it the top level
 		FPlatformFileManager::Get().SetPlatformFile(*GuardPlatformFile);
 
 
@@ -29,7 +29,7 @@ struct FBSGE_EarlyInstaller
 		{
 			if (BSGuardSettings->ValidateAndSetKey())
 			{
-				// 将验证后的密钥字节设置给加密模块
+				// Set the verified key bytes to the encryption module
 				FBSGuardCrypto::SetKey(BSGuardSettings->GetKeyBytes());
 			}
 			else

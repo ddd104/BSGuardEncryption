@@ -119,17 +119,16 @@ void FBSGE_AssetActions::RegisterAssetTypeAction()
 
 				TSharedPtr<IAssetTypeActions> Active = Tools.GetAssetTypeActionsForClass(TargetClass).Pin();
 
-				if (Active == AssetTypeAction)          // 指针相等 ⇒ 当前引擎用的就是这一条
+				if (Active == AssetTypeAction)
 				{
 					return true;
 				}
 			}
-			// *指针相等* ⇒ 说明当前引擎正使用你的实现
 			return false;
 		}
 	);
 	
-	// 注册保存包事件，以在资产保存后自动加密
+	// Register for the save package event to automatically encrypt assets after they are saved
 #if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION == 27
 	UPackage::PackageSavedEvent.AddStatic([](const FString& PackageFileName, UObject* Object)
 		{
@@ -144,14 +143,14 @@ void FBSGE_AssetActions::RegisterAssetTypeAction()
 				return;
 			}
 		
-			// 当一个资产包保存成功后触发
+			// Triggered when an asset pack is saved successfully
 			if (FBSGuardCrypto::IsEncryptedAssetFile(PackageFileName) == false)
 			{
 				Package->SetPackageFlags(PKG_DisallowExport);
-				// 如果存在有效密钥，且当前保存的是未加密文件，将其加密
+				// If a valid key exists and the currently saved file is unencrypted, encrypt it
 				if (FBSGuardCrypto::EncryptFile(PackageFileName))
 				{
-					UE_LOG(LogTemp, Log, TEXT("Encrypted asset on save: %s, ackageFlags: %d"), *PackageFileName, Package->GetPackageFlags());
+					UE_LOG(LogTemp, Log, TEXT("Encrypted asset on save: %s"), *PackageFileName);
 				}
 			}
 			else
@@ -171,14 +170,14 @@ void FBSGE_AssetActions::RegisterAssetTypeAction()
 				return;
 			}
 		
-			// 当一个资产包保存成功后触发
+			// Triggered when an asset pack is saved successfully
 			if (FBSGuardCrypto::IsEncryptedAssetFile(PackageFileName) == false)
 			{
 				Package->SetPackageFlags(PKG_DisallowExport);
-				// 如果存在有效密钥，且当前保存的是未加密文件，将其加密
+				// If a valid key exists and the currently saved file is unencrypted, encrypt it
 				if (FBSGuardCrypto::EncryptFile(PackageFileName))
 				{
-					UE_LOG(LogTemp, Log, TEXT("Encrypted asset on save: %s, ackageFlags: %d"), *PackageFileName, Package->GetPackageFlags());
+					UE_LOG(LogTemp, Log, TEXT("Encrypted asset on save: %s"), *PackageFileName);
 				}
 			}
 			else
@@ -199,7 +198,7 @@ TSharedRef<FExtender> FBSGE_AssetActions::OnExtendContentBrowserAssetMenu(const 
 {
 	TSharedRef<FExtender> Extender(new FExtender());
 	Extender->AddMenuExtension(
-			"CommonAssetActions", // 在高级操作区之后插入
+			"CommonAssetActions",
 			EExtensionHook::After,
 			nullptr,
 			FMenuExtensionDelegate::CreateStatic(&FBSGE_AssetActions::CreateAssetContextMenu, SelectedAssets)
@@ -223,7 +222,7 @@ void FBSGE_AssetActions::CreateAssetContextMenu(FMenuBuilder& MenuBuilder, const
 		{
 			continue;
 		}
-		// 检查该资产文件是否已加密
+		// Check if the asset file is encrypted
 		if (FBSGuardCrypto::IsEncryptedAssetFile(AssetFilePath))
 		{
 			NeedDecryptFiles.Add(AssetData);
@@ -239,7 +238,7 @@ void FBSGE_AssetActions::CreateAssetContextMenu(FMenuBuilder& MenuBuilder, const
 	}
 	if (HasDecryptButton)
 	{
-		// **解密** 菜单项
+		// **Decrypt** menu item
 #if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION == 27
 		FSlateIcon UnlockIcon(FEditorStyle::GetStyleSetName(), "Icons.Unlock");
 #elif ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 0 
@@ -247,15 +246,16 @@ void FBSGE_AssetActions::CreateAssetContextMenu(FMenuBuilder& MenuBuilder, const
 #endif
 		
 		MenuBuilder.AddMenuEntry(
-			LOCTEXT("DecryptAssetLabel", "解密资产"),
-			LOCTEXT("DecryptAssetTooltip", "使用当前密钥解密此资产文件"),
-			UnlockIcon,  // 假设使用一个解锁图标
+			LOCTEXT("DecryptAssetLabel", "Decrypted Assets"),
+			LOCTEXT("DecryptAssetTooltip", "Decrypt this asset file using the current key"),
+			UnlockIcon,
 			FUIAction(
 				FExecuteAction::CreateLambda([NeedDecryptFiles]()
 				{
+					FBSGuardPlatformFile::Asset.Empty();
 					for (const FAssetData& AssetData : NeedDecryptFiles)
 					{
-						UE_LOG(LogTemp, Display, TEXT("[FBSGE_AssetActions] [EncryptSelectedAsset] Start DecryptSelectedAsset %s"), *AssetData.PackageName.ToString());
+						UE_LOG(LogTemp, Display, TEXT("[%d] [EncryptSelectedAsset] Start DecryptSelectedAsset %s"), __LINE__, *AssetData.PackageName.ToString());
 						UPackage* Package = AssetData.GetPackage();
 						Package->ClearPackageFlags(PKG_DisallowExport);
 						BSGEncrypt::MarkPackagePlain(Package);
@@ -276,7 +276,7 @@ void FBSGE_AssetActions::CreateAssetContextMenu(FMenuBuilder& MenuBuilder, const
 	}
 	if (HasEncryptionButton)
 	{
-		// **加密** 菜单项
+		// **Encrypt** menu item
 #if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION == 27
 		FSlateIcon lockIcon(FEditorStyle::GetStyleSetName(), "Icons.Lock");
 #elif ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 0 
@@ -284,9 +284,9 @@ void FBSGE_AssetActions::CreateAssetContextMenu(FMenuBuilder& MenuBuilder, const
 #endif
 		
 		MenuBuilder.AddMenuEntry(
-			LOCTEXT("EncryptAssetLabel", "加密资产"),
-			LOCTEXT("EncryptAssetTooltip", "使用当前密钥加密此资产文件"),
-			lockIcon,  // 假设使用一个锁图标
+			LOCTEXT("EncryptAssetLabel", "Encrypt Assets"),
+			LOCTEXT("EncryptAssetTooltip", "Encrypt this asset file using the current key"),
+			lockIcon,
 			FUIAction(
 				FExecuteAction::CreateLambda([NeedEncryptionFiles]()
 				{
@@ -321,8 +321,7 @@ void FBSGE_AssetActions::EncryptSelectedAsset(const FAssetData& AssetData)
 	if (Package)
 	{
 		Package->FullyLoad();
-
-		// 1) 先保存最新内容（你已有）
+		
 		bool bOk = false;
 #if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 6
 		FSavePackageArgs Args;
@@ -335,27 +334,23 @@ void FBSGE_AssetActions::EncryptSelectedAsset(const FAssetData& AssetData)
 			UE_LOG(LogTemp, Error, TEXT("SaveFile failed for %s"), *PackageName);
 			return;
 		}
-
-		// 2) 释放引用（避免后续文件被 UE 持有）
+		
 		ResetLoaders(Package);
 		TArray<UPackage*> ToUnload{ Package };
 		UPackageTools::UnloadPackages(ToUnload);
 		CollectGarbage(RF_NoFlags);
 	}
-
-	// 3) 物理层加密
+	
 	if (!FBSGuardCrypto::EncryptFile(AssetFilePath))
 	{
-		FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("EncryptFailed", "加密资产失败，请检查日志。"));
+		FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("EncryptFailed", "Failed to encrypt asset, please check logs."));
 		return;
 	}
-
-	// 4) 通知资产注册表重扫该文件（刷新缩略图/状态）
+	
 	FAssetRegistryModule& ARM = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
 	ARM.Get().ScanFilesSynchronous({ AssetFilePath }, /*bForceRescan*/true);
 	ARM.Get().WaitForCompletion();
-
-	// 5) 不要 MarkPackageDirty；如需重开编辑器，可按需打开
+	
 	UE_LOG(LogTemp, Display, TEXT("Asset %s Encrypted."), *PackageName);
 }
 
@@ -369,8 +364,7 @@ void FBSGE_AssetActions::DecryptSelectedAsset(const FAssetData& AssetData)
 	if (Package)
 	{
 		Package->FullyLoad();
-
-		// 1) 先保存最新内容（你已有）
+		
 		bool bOk = false;
 #if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 6
 		FSavePackageArgs Args;
@@ -383,27 +377,23 @@ void FBSGE_AssetActions::DecryptSelectedAsset(const FAssetData& AssetData)
 			UE_LOG(LogTemp, Error, TEXT("SaveFile failed for %s"), *PackageName);
 			return;
 		}
-
-		// 2) 释放引用（避免后续文件被 UE 持有）
+		
 		ResetLoaders(Package);
 		TArray<UPackage*> ToUnload{ Package };
 		UPackageTools::UnloadPackages(ToUnload);
 		CollectGarbage(RF_NoFlags);
 	}
-
-	// 3) 物理层加密
+	
 	if (!FBSGuardCrypto::DecryptFile(AssetFilePath))
 	{
 		FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("DecryptFailed", "加密资产失败，请检查日志。"));
 		return;
 	}
 
-	// 4) 通知资产注册表重扫该文件（刷新缩略图/状态）
 	FAssetRegistryModule& ARM = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
 	ARM.Get().ScanFilesSynchronous({ AssetFilePath }, /*bForceRescan*/true);
 	ARM.Get().WaitForCompletion();
-
-	// 5) 不要 MarkPackageDirty；如需重开编辑器，可按需打开
+	
 	UE_LOG(LogTemp, Display, TEXT("Asset %s Decrypted."), *PackageName);
 }
 
@@ -413,10 +403,10 @@ FDelegateHandle FBSGE_AssetActions::ExtenderHandle;
 
 void FBSGuardEditorModule::StartupModule()
 {
-	// 注册内容浏览器菜单扩展
+	// Registering the Content Browser Menu Extension
 	FBSGE_AssetActions::RegisterAssetActions();
 	
-	// 注册加密AssetTypeAction
+	// Registering Encrypted AssetTypeAction
 	FBSGE_AssetActions::RegisterAssetTypeAction();
 
 	ScanEncryptedAssets();

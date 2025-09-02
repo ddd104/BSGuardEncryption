@@ -36,7 +36,7 @@ bool FBSGuardSettings::ValidateAndSetKey()
 	bKeyIsValid = false;
 	KeyBytes.Empty();
 
-	// 通过公钥派生密钥，编辑器始终可用
+	// The editor is always available by deriving the key from the public key
 	DeriveKeyFromPublicKey(KeyBytes);
 	if (KeyBytes.Num() != 32)
 	{

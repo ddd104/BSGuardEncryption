@@ -13,7 +13,7 @@ FBSGuardPlatformFile::FBSGuardFileHandleRead::FBSGuardFileHandleRead(IFileHandle
 	CTState = InnerHandle->Read(EncryptedData.GetData(), 1);
 	InnerHandle->Seek(0);
 	InnerHandle->Read(EncryptedData.GetData(), TotalSize);
-	// 解析头、IV、Tag并进行解密
+	// Parse the header, IV, Tag and decrypt
 	if (EncryptedData.Num() >= 4 && FMemory::Memcmp(EncryptedData.GetData(), BSGE::CryptoMagic, 4) == 0)
 	{
 		TArray<uint8> PlainData;
@@ -65,7 +65,7 @@ bool FBSGuardPlatformFile::FBSGuardFileHandleRead::Read(uint8* Destination, int6
 	{
 		return false;
 	}
-	// 调整读取长度不超过可用数据
+	// Adjust read length to not exceed available data
 	int64 BytesAvailable = DecryptedData.Num() - ReadPos;
 	int64 BytesToCopy = FMath::Min(BytesToRead, BytesAvailable);
 	if (BytesToCopy <= 0)
@@ -79,7 +79,7 @@ bool FBSGuardPlatformFile::FBSGuardFileHandleRead::Read(uint8* Destination, int6
 
 bool FBSGuardPlatformFile::FBSGuardFileHandleRead::Write(const uint8* Source, int64 BytesToWrite)
 {
-	// 读取句柄不支持写
+	// The read handle does not support writing
 	return false;
 }
 #if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION == 27

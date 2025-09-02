@@ -52,7 +52,7 @@ static bool ParseBSK1(const TArray<uint8>& Data, FBSK1Header& Out)
 		return false;
 
 	Out.Mode = *Read(1);
-	if (Out.Mode != 1) // 仅支持 PUBKDF
+	if (Out.Mode != 1) // Only PUBKDF is supported
 		return false;
 
 	uint8 SaltLen = *Read(1);
@@ -95,7 +95,7 @@ TArray<uint8> FBSLicenseUtils::GetSharedKey()
     if (!ParseBSK1(EncBytes, H))
         return Empty;
 
-    // 1) 读取公钥 PEM -> EVP_PKEY
+    // Read public key PEM -> EVP_PKEY
     FString PemPub;
     if (!FFileHelper::LoadFileToString(PemPub, *PubPath))
         return Empty;
@@ -110,7 +110,7 @@ TArray<uint8> FBSLicenseUtils::GetSharedKey()
     if (!PKey)
         return Empty;
 
-    // 2) 导出 SPKI DER
+    // Export SPKI DER
     int SpkiLen = i2d_PUBKEY(PKey, NULL);
     if (SpkiLen <= 0) { EVP_PKEY_free(PKey); return Empty; }
 
@@ -120,7 +120,7 @@ TArray<uint8> FBSLicenseUtils::GetSharedKey()
     if (i2d_PUBKEY(PKey, &P) != SpkiLen) { EVP_PKEY_free(PKey); return Empty; }
     EVP_PKEY_free(PKey);
 
-    // 3) key = SHA256( SPKI || salt )
+    // key = SHA256( SPKI || salt )
     TArray<uint8> Key;
     Key.SetNumUninitialized(32);
     {
@@ -142,7 +142,7 @@ TArray<uint8> FBSLicenseUtils::GetSharedKey()
         EVP_MD_CTX_free(Ctx);
     }
 
-    // 4) AES-256-GCM 解密（AAD = "BSK1" + mode(=1) + salt）
+    // AES-256-GCM decryption (AAD = "BSK1" + mode(=1) + salt)
     EVP_CIPHER_CTX* Ctx = EVP_CIPHER_CTX_new();
     if (!Ctx) return Empty;
 
@@ -157,7 +157,7 @@ TArray<uint8> FBSLicenseUtils::GetSharedKey()
     if (bOK) bOK = EVP_DecryptUpdate(Ctx, NULL, &Outl, AADPrefix, 5) > 0;
     if (bOK && H.Salt.Num() > 0) bOK = EVP_DecryptUpdate(Ctx, NULL, &Outl, H.Salt.GetData(), H.Salt.Num()) > 0;
 
-    // 密文
+    // Ciphertext
     int PlainLen = 0;
     TArray<uint8> Plain;
     Plain.SetNumUninitialized(H.Cipher.Num());
@@ -175,7 +175,7 @@ TArray<uint8> FBSLicenseUtils::GetSharedKey()
         return Empty;
 
     Plain.SetNum(PlainLen + FinalLen);
-    return Plain; // 期望为 32 字节
+    return Plain; // Expected 32 bytes
 #else
     return Empty;
 #endif

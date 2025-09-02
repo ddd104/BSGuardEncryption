@@ -122,10 +122,10 @@ bool FBSGuardPlatformFile::Initialize(IPlatformFile* Inner, const TCHAR* Name)
 IFileHandle* FBSGuardPlatformFile::OpenRead(const TCHAR* Filename, bool bAllowWrite)
 {
 	FString FilePath(Filename);
-	// 只拦截特定扩展名的资产文件
+	// Only block asset files with specific extensions
 	if (FBSGuardCrypto::ShouldEncryptAsset(FilePath) && FBSGuardCrypto::IsEncryptedAssetFile(FilePath))
 	{
-		// 使用自定义读取句柄，以解密方式提供数据
+		// Use a custom read handle to provide data in decrypted form
 		IFileHandle* InnerHandle = LowerLevel->OpenRead(Filename, bAllowWrite);
 		if (!InnerHandle)
 		{
@@ -143,6 +143,7 @@ IFileHandle* FBSGuardPlatformFile::OpenRead(const TCHAR* Filename, bool bAllowWr
 IFileHandle* FBSGuardPlatformFile::OpenWrite(const TCHAR* Filename, bool bAppend, bool bAllowRead)
 {
 	FString FilePath(Filename);
+	// When used for export
 	if (IsEncryptedAssetFile2(FilePath))
 	{
 		IFileHandle* InnerHandle = LowerLevel->OpenWrite(Filename, false, bAllowRead);
@@ -162,6 +163,7 @@ IFileHandle* FBSGuardPlatformFile::OpenWrite(const TCHAR* Filename, bool bAppend
 
 IPlatformFile* FBSGuardPlatformFile::GetBottomPlatformFile()
 {
+	// Ensure that the IPlatformFile obtained is the lowest level
 	IPlatformFile* Top = &FPlatformFileManager::Get().GetPlatformFile();
 	IPlatformFile* Bottom = Top;
 	for (IPlatformFile* LL = Top->GetLowerLevel(); LL; LL = LL->GetLowerLevel())
@@ -175,6 +177,7 @@ IPlatformFile* FBSGuardPlatformFile::GetBottomPlatformFile()
 
 static bool AreSameFilename(const FString& A, const FString& B, bool bIgnoreExtension = false)
 {
+	
 	FString A1 = A, B1 = B;
 	A1.TrimStartAndEndInline();
 	B1.TrimStartAndEndInline();

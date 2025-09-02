@@ -36,11 +36,11 @@ bool FBSGuardCrypto::IsEncryptedAssetFile(const FString& FilePath)
 
     if (!FPaths::FileExists(AbsolutePath))
     {
-        UE_LOG(LogTemp, Warning, TEXT("[IsEncryptedAssetFile] 文件不存在：%s"), *AbsolutePath);
+        UE_LOG(LogTemp, Warning, TEXT("[IsEncryptedAssetFile] File does not exist：%s"), *AbsolutePath);
         return false;
     }
     
-    // 读取文件头4字节检查魔数
+    // Read the file header 4 bytes to check the magic number
     uint8 Header[4] = {0};
     IPlatformFile& PlatFile = FPlatformFileManager::Get().GetPlatformFile();
     IPlatformFile* RawFile = PlatFile.GetLowerLevel();
@@ -62,14 +62,14 @@ bool FBSGuardCrypto::IsEncryptedAssetFile(const FString& FilePath)
 
 bool FBSGuardCrypto::EncryptFile(const FString& FilePath)
 {
-    // 读取原文件完整数据
+    // Read the complete data of the original file
     TArray<uint8> PlainData;
     if (!FFileHelper::LoadFileToArray(PlainData, *FilePath))
     {
         UE_LOG(LogTemp, Error, TEXT("[%d]Failed to read file for encryption: %s"), __LINE__, *FilePath);
         return false;
     }
-    // 执行加密
+    // Perform encryption
     TArray<uint8> EncryptedData;
     if (!Encrypt(PlainData, EncryptedData))
     {
@@ -77,7 +77,7 @@ bool FBSGuardCrypto::EncryptFile(const FString& FilePath)
         return false;
     }
     
-    // 写入文件（覆盖原文件内容），直接使用底层平台文件以避免再次被加密
+    // Write files (overwrite the original file content) and directly use the underlying platform files to avoid re-encryption
     IPlatformFile* RawFile = FBSGuardPlatformFile::GetBottomPlatformFile();
 
 	bool ret = RawFile->SetReadOnly(*FilePath, false);
@@ -103,7 +103,7 @@ bool FBSGuardCrypto::DecryptFile(const FString& FilePath)
         UE_LOG(LogTemp, Error, TEXT("[%d]Cannot decrypt file %s: Key not set."), __LINE__, *FilePath);
         return false;
     }
-    // 读取加密文件数据
+    // Read encrypted file data
     TArray<uint8> FileData;
     if (!FFileHelper::LoadFileToArray(FileData, *FilePath))
     {
@@ -111,7 +111,7 @@ bool FBSGuardCrypto::DecryptFile(const FString& FilePath)
         return false;
     }
 	
-    // 解密成功，写回明文文件数据，直接使用底层平台文件以避免被加密
+    // Decryption is successful, write back the plaintext file data, and directly use the underlying platform file to avoid being encrypted
 	IPlatformFile* Raw = FBSGuardPlatformFile::GetBottomPlatformFile();
 	bool ret = Raw->SetReadOnly(*FilePath, false);
 	TUniquePtr<IFileHandle> FileHandle(Raw->OpenWrite(*FilePath, false, true));
@@ -129,7 +129,7 @@ bool FBSGuardCrypto::DecryptFile(const FString& FilePath)
     return true;
 }
 
-// 使用OpenSSL EVP接口实现AES-256-GCM加密
+// Implementing AES-256-GCM encryption using the OpenSSL EVP interface
 bool FBSGuardCrypto::Encrypt(const TArray<uint8>& InPlain, TArray<uint8>& OutCipher)
 {
     const TArray<uint8>& SharedKey = FBSLicenseUtils::GetSharedKey();
@@ -139,14 +139,14 @@ bool FBSGuardCrypto::Encrypt(const TArray<uint8>& InPlain, TArray<uint8>& OutCip
         return false;
     }
 
-    /* 1. 生成 12-byte Nonce */
+    // Generate Nonce
     uint8 Nonce[BSGE::GcmNonceSize];
     if (!GenRandomBytes(Nonce, BSGE::GcmNonceSize))
     {
         return false;
     }
 
-    /* 2. 创建上下文 */
+    // Creating a Context
     EVP_CIPHER_CTX* Ctx = EVP_CIPHER_CTX_new();
     if (!Ctx)
     {
@@ -157,7 +157,7 @@ bool FBSGuardCrypto::Encrypt(const TArray<uint8>& InPlain, TArray<uint8>& OutCip
     int32 CipherLen  = 0;
     int32 TmpLen     = 0;
     TArray<uint8> CipherText;
-    CipherText.SetNumUninitialized(PlainLen);   // GCM 不膨胀数据
+    CipherText.SetNumUninitialized(PlainLen);   // GCM No data expansion
 
     bool bOK =
         EVP_EncryptInit_ex(Ctx, EVP_aes_256_gcm(), nullptr, nullptr, nullptr) == 1 &&
@@ -181,7 +181,7 @@ bool FBSGuardCrypto::Encrypt(const TArray<uint8>& InPlain, TArray<uint8>& OutCip
         UE_LOG(LogTemp, Error, TEXT("Encrypt failed")); return false;
     }
 
-    /* 组包：Magic|CEState|TEState|Ver|Nonce|Tag|Cipher */
+    // Package：Magic|CEState|TEState|Ver|Nonce|Tag|Cipher
     OutCipher.Reset();
     OutCipher.Append(BSGE::CryptoMagic, 4);
     OutCipher.Add(1);
@@ -193,7 +193,7 @@ bool FBSGuardCrypto::Encrypt(const TArray<uint8>& InPlain, TArray<uint8>& OutCip
     return true;
 }
 
-// 使用OpenSSL EVP接口实现AES-256-GCM解密
+// Implementing AES-256-GCM decryption using the OpenSSL EVP interface
 bool FBSGuardCrypto::Decrypt(const TArray<uint8>& InCipher, TArray<uint8>& OutPlain)
 {
     const int32 MinSize = 2 + 4 + 1 + BSGE::GcmNonceSize + BSGE::GcmTagSize;

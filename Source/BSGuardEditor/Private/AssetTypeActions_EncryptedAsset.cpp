@@ -6,16 +6,12 @@ TSharedPtr<class SWidget> FAssetTypeActions_EncryptedAsset::GetThumbnailOverlay(
 {
 	const FString& PackageExt = FBSGuardCrypto::ChooseHeaderExt(AssetData);
 	FString AssetFilePath = FPackageName::LongPackageNameToFilename(AssetData.PackageName.ToString(), PackageExt);
-	/*if (FBSGuardCrypto::IsEncryptedAssetFile(AssetFilePath))
-	{
-		return FSlateStyleRegistry::FindSlateStyle("GuardEncryptionStyle")->GetBrush("GuardEncryption.LockIcon16");
-	}*/
 	return nullptr;
 }
 
 FAssetTypeActions_EncryptedAsset::FAssetTypeActions_EncryptedAsset(const TSharedRef<IAssetTypeActions>& InInner): Inner(InInner)
 {
-	//UE_LOG(LogTemp, Display, TEXT("FAssetTypeActions_EncryptedAsset::FAssetTypeActions_EncryptedAsset"));
+	
 }
 
 void FAssetTypeActions_EncryptedAsset::OpenAssetEditor(const TArray<UObject*>& InObjects, TSharedPtr<IToolkitHost> Host)
@@ -57,7 +53,7 @@ void FAssetTypeActions_EncryptedAsset::OpenAssetEditor(const TArray<UObject*>& I
 		}
 		if (IsOpenAllowed())
 		{
-			//FMessageDialog::Open(EAppMsgType::Ok, FText::FromString("Failed to pass verification, refused to open this asset."));
+			FMessageDialog::Open(EAppMsgType::Ok, FText::FromString("Failed to pass verification, refused to open this asset."));
 			MakeOpenObjects.Add(Asset);
 		}
 	}
@@ -300,7 +296,7 @@ void FAssetTypeActions_EncryptedAsset::OpenAssetEditor(const TArray<UObject*>& I
 		}
 		if (IsOpenAllowed())
 		{
-			//FMessageDialog::Open(EAppMsgType::Ok, FText::FromString("Failed to pass verification, refused to open this asset."));
+			FMessageDialog::Open(EAppMsgType::Ok, FText::FromString("Failed to pass verification, refused to open this asset."));
 			MakeOpenObjects.Add(Asset);
 		}
 	}
