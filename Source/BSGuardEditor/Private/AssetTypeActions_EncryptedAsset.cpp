@@ -54,7 +54,7 @@ void FAssetTypeActions_EncryptedAsset::OpenAssetEditor(const TArray<UObject*>& I
 		if (IsOpenAllowed())
 		{
 			FMessageDialog::Open(EAppMsgType::Ok, FText::FromString("Failed to pass verification, refused to open this asset."));
-			MakeOpenObjects.Add(Asset);
+			//MakeOpenObjects.Add(Asset);
 		}
 	}
 	Inner->OpenAssetEditor(MakeOpenObjects, Host);
