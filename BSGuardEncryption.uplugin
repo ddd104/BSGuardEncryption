@@ -17,11 +17,10 @@
 	"Modules": [
 		{
 			"Name": "BSGuardCore",
-			"Type": "Developer",
-			"LoadingPhase": "PostConfigInit",
+			"Type": "Editor",
+			"LoadingPhase": "PreLoadingScreen",
 			"bCanBeUsedWithEditorCommandlets": true,
-			"PreloadDependencies": [ "AssetRegistry", "Core" ],
-			"WhitelistTargets": [ "Editor", "Game", "Program" ]
+			"PreloadDependencies": [ "AssetRegistry", "Core" ]
 		},
 		{
 			"Name": "BSGuardEditor",

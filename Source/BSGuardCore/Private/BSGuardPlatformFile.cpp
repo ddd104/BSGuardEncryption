@@ -106,42 +106,50 @@ bool FBSGuardPlatformFile::IterateDirectoryStat(const TCHAR* Directory, FDirecto
 	return LowerLevel->IterateDirectoryStat(Directory, Visitor);
 }
 
+
+
 bool FBSGuardPlatformFile::Initialize(IPlatformFile* Inner, const TCHAR* Name)
 {
-	UE_LOG(LogTemp, Log, TEXT("FBSGuardPlatformFile::Initialize"));
+	UE_LOG(LogTemp, Display, TEXT("FBSGuardPlatformFile::Initialize"));
 	if (Inner == nullptr)
 	{
 		UE_LOG(LogTemp, Error, TEXT("FBSGuardPlatformFile::Initialize: Inner is nullptr"));
 		return false;
 	}
-	UE_LOG(LogTemp, Log, TEXT("FBSGuardPlatformFile::Initialize "));
+	UE_LOG(LogTemp, Display, TEXT("FBSGuardPlatformFile::Initialize "));
 	LowerLevel = Inner;
 	return true;
 }
 
 IFileHandle* FBSGuardPlatformFile::OpenRead(const TCHAR* Filename, bool bAllowWrite)
 {
+	UE_LOG(LogTemp, Display, TEXT("%s, %d"), ANSI_TO_TCHAR(__FUNCTION__), __LINE__);
 	FString FilePath(Filename);
 	// Only block asset files with specific extensions
 	if (FBSGuardCrypto::ShouldEncryptAsset(FilePath) && FBSGuardCrypto::IsEncryptedAssetFile(FilePath))
 	{
+		UE_LOG(LogTemp, Display, TEXT("%s, %d, %s"), ANSI_TO_TCHAR(__FUNCTION__), __LINE__, *FilePath);
 		// Use a custom read handle to provide data in decrypted form
 		IFileHandle* InnerHandle = LowerLevel->OpenRead(Filename, bAllowWrite);
 		if (!InnerHandle)
 		{
 			return nullptr;
 		}
+		/*UE_LOG(LogTemp, Display, TEXT("%s, %d, %s"), ANSI_TO_TCHAR(__FUNCTION__), __LINE__, *FilePath);
 		if (!FBSGuardCrypto::IsValidAction())
 		{
 			return InnerHandle;
-		}
+		}*/
+		UE_LOG(LogTemp, Display, TEXT("%s, %d, %s"), ANSI_TO_TCHAR(__FUNCTION__), __LINE__, *FilePath);
 		return new FBSGuardFileHandleRead(InnerHandle);
 	}
+	UE_LOG(LogTemp, Display, TEXT("%s, %d"), ANSI_TO_TCHAR(__FUNCTION__), __LINE__);
 	return LowerLevel->OpenRead(Filename, bAllowWrite);
 }
 
 IFileHandle* FBSGuardPlatformFile::OpenWrite(const TCHAR* Filename, bool bAppend, bool bAllowRead)
 {
+	UE_LOG(LogTemp, Display, TEXT("%s, %d"), ANSI_TO_TCHAR(__FUNCTION__), __LINE__);
 	FString FilePath(Filename);
 	// When used for export
 	if (IsEncryptedAssetFile2(FilePath))
@@ -151,13 +159,14 @@ IFileHandle* FBSGuardPlatformFile::OpenWrite(const TCHAR* Filename, bool bAppend
 		{
 			return nullptr;
 		}
-		if (!FBSGuardCrypto::IsValidAction())
+		/*if (!FBSGuardCrypto::IsValidAction())
 		{
 			return InnerHandle;
-		}
+		}*/
+		UE_LOG(LogTemp, Display, TEXT("%s, %d"), ANSI_TO_TCHAR(__FUNCTION__), __LINE__);
 		return new FBSGuardFileHandleWrite(InnerHandle);
 	}
-	
+	UE_LOG(LogTemp, Display, TEXT("%s, %d"), ANSI_TO_TCHAR(__FUNCTION__), __LINE__);
 	return LowerLevel->OpenWrite(Filename, bAppend, bAllowRead);
 }
 
@@ -166,11 +175,11 @@ IPlatformFile* FBSGuardPlatformFile::GetBottomPlatformFile()
 	// Ensure that the IPlatformFile obtained is the lowest level
 	IPlatformFile* Top = &FPlatformFileManager::Get().GetPlatformFile();
 	IPlatformFile* Bottom = Top;
-	for (IPlatformFile* LL = Top->GetLowerLevel(); LL; LL = LL->GetLowerLevel())
+	/*for (IPlatformFile* LL = Top->GetLowerLevel(); LL; LL = LL->GetLowerLevel())
 	{
 		Bottom = LL;
 		UE_LOG(LogTemp,Warning,TEXT("PF: %s"), LL->GetName());
-	}
+	}*/
 	UE_LOG(LogTemp,Warning,TEXT("Bottom PF: %s"), Bottom->GetName());
 	return Bottom;
 }

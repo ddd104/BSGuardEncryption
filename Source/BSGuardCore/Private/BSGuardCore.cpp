@@ -22,7 +22,7 @@ struct FBSGE_EarlyInstaller
 		GuardPlatformFile->Initialize(OriginalPlatformFile, TEXT("BSGuardPlatformFile"));
 		// Replace the current platform file with GuardPlatformFile, making it the top level
 		FPlatformFileManager::Get().SetPlatformFile(*GuardPlatformFile);
-
+		UE_LOG(LogTemp, Display, TEXT("FBSGE_EarlyInstaller 222"));
 
 		BSGuardSettings = MakeShared<FBSGuardSettings>();
 		if (BSGuardSettings)
@@ -63,6 +63,7 @@ void FBSGuardCoreModule::StartupModule()
 #if WITH_CanPackagingWithEncryption == 0
 	static FBSGE_EarlyInstaller BSGE_PlatformFileAutoInstaller;
 #endif
+	UE_LOG(LogTemp, Log, TEXT("FBSGuardCoreModule::StartupModule"));
 }
 
 void FBSGuardCoreModule::ShutdownModule()

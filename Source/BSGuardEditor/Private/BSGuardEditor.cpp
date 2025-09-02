@@ -117,6 +117,10 @@ void FBSGE_AssetActions::RegisterAssetTypeAction()
 			{
 				UClass* TargetClass = AssetTypeAction->GetSupportedClass();
 
+				if (!Tools.GetAssetTypeActionsForClass(TargetClass).IsValid())
+				{
+					return false;
+				}
 				TSharedPtr<IAssetTypeActions> Active = Tools.GetAssetTypeActionsForClass(TargetClass).Pin();
 
 				if (Active == AssetTypeAction)
