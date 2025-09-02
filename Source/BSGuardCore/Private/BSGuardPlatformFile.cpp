@@ -121,9 +121,16 @@ bool FBSGuardPlatformFile::Initialize(IPlatformFile* Inner, const TCHAR* Name)
 	return true;
 }
 
+static bool IsRunningCookCommandlet2()
+{
+	FString Commandline = FCommandLine::Get();
+	const bool bIsCookCommandlet = IsRunningCommandlet() && Commandline.Contains(TEXT("run=cook"));
+	return bIsCookCommandlet;
+}
+
 IFileHandle* FBSGuardPlatformFile::OpenRead(const TCHAR* Filename, bool bAllowWrite)
 {
-	UE_LOG(LogTemp, Display, TEXT("%s, %d"), ANSI_TO_TCHAR(__FUNCTION__), __LINE__);
+	//UE_LOG(LogTemp, Display, TEXT("%s, %d"), ANSI_TO_TCHAR(__FUNCTION__), __LINE__);
 	FString FilePath(Filename);
 	// Only block asset files with specific extensions
 	if (FBSGuardCrypto::ShouldEncryptAsset(FilePath) && FBSGuardCrypto::IsEncryptedAssetFile(FilePath))
@@ -140,16 +147,23 @@ IFileHandle* FBSGuardPlatformFile::OpenRead(const TCHAR* Filename, bool bAllowWr
 		{
 			return InnerHandle;
 		}*/
-		UE_LOG(LogTemp, Display, TEXT("%s, %d, %s"), ANSI_TO_TCHAR(__FUNCTION__), __LINE__, *FilePath);
+#if WITH_CanPackagingWithEncryption == 0
+		if (IsRunningCommandlet() || IsRunningCookCommandlet2())
+		{
+			return InnerHandle;
+		}
+#endif
+		
+		UE_LOG(LogTemp, Display, TEXT("%d, %s"), __LINE__, *FilePath);
 		return new FBSGuardFileHandleRead(InnerHandle);
 	}
-	UE_LOG(LogTemp, Display, TEXT("%s, %d"), ANSI_TO_TCHAR(__FUNCTION__), __LINE__);
+	//UE_LOG(LogTemp, Display, TEXT("%s, %d"), ANSI_TO_TCHAR(__FUNCTION__), __LINE__);
 	return LowerLevel->OpenRead(Filename, bAllowWrite);
 }
 
 IFileHandle* FBSGuardPlatformFile::OpenWrite(const TCHAR* Filename, bool bAppend, bool bAllowRead)
 {
-	UE_LOG(LogTemp, Display, TEXT("%s, %d"), ANSI_TO_TCHAR(__FUNCTION__), __LINE__);
+	//UE_LOG(LogTemp, Display, TEXT("%s, %d"), ANSI_TO_TCHAR(__FUNCTION__), __LINE__);
 	FString FilePath(Filename);
 	// When used for export
 	if (IsEncryptedAssetFile2(FilePath))
@@ -163,10 +177,10 @@ IFileHandle* FBSGuardPlatformFile::OpenWrite(const TCHAR* Filename, bool bAppend
 		{
 			return InnerHandle;
 		}*/
-		UE_LOG(LogTemp, Display, TEXT("%s, %d"), ANSI_TO_TCHAR(__FUNCTION__), __LINE__);
+		UE_LOG(LogTemp, Display, TEXT("%d, %s"), __LINE__, *FilePath);
 		return new FBSGuardFileHandleWrite(InnerHandle);
 	}
-	UE_LOG(LogTemp, Display, TEXT("%s, %d"), ANSI_TO_TCHAR(__FUNCTION__), __LINE__);
+	//UE_LOG(LogTemp, Display, TEXT("%s, %d"), ANSI_TO_TCHAR(__FUNCTION__), __LINE__);
 	return LowerLevel->OpenWrite(Filename, bAppend, bAllowRead);
 }
 
