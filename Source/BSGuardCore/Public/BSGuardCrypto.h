@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include "CoreMinimal.h"
+#include "AssetRegistry/AssetData.h"
 #include "BSGuardCrypto.generated.h"
 
 
@@ -28,6 +29,8 @@ public:
 	static bool GenRandomBytes(uint8* Out, int32 Num);
 	static bool IsValidAction();
 	BSGUARDCORE_API static bool ShouldEncryptAsset(const FString& FilePath);
+
+	BSGUARDCORE_API static const FString& ChooseHeaderExt(const FAssetData& AD); 
 private:
 	static bool bKeyIsSet;
 	// 当前使用的对称密钥和有效性

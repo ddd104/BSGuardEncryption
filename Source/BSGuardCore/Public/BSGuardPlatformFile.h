@@ -58,11 +58,15 @@ public:
 	virtual IFileHandle* OpenRead(const TCHAR* Filename, bool bAllowWrite = false) override;
 	virtual IFileHandle* OpenWrite(const TCHAR* Filename, bool bAppend = false, bool bAllowRead = false) override;
 	
+	static BSGUARDCORE_API IPlatformFile* GetBottomPlatformFile();
 
+	friend class FBSGE_AssetActions;
 private:
+	bool IsEncryptedAssetFile2(FString FilePath);
 	IPlatformFile* LowerLevel;  // 底层实际平台文件
-
 	// 自定义文件句柄实现类声明（定义在cpp中）
 	class FBSGuardFileHandleRead;
 	class FBSGuardFileHandleWrite;
+
+	BSGUARDCORE_API static TArray<FAssetData> Asset;
 };

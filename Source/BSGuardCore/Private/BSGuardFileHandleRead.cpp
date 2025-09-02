@@ -28,6 +28,12 @@ FBSGuardPlatformFile::FBSGuardFileHandleRead::FBSGuardFileHandleRead(IFileHandle
 	ReadPos = 0;
 }
 
+FBSGuardPlatformFile::FBSGuardFileHandleRead::~FBSGuardFileHandleRead()
+{
+	delete InnerHandle;
+	InnerHandle = nullptr; 
+}
+
 int64 FBSGuardPlatformFile::FBSGuardFileHandleRead::Size()
 {
 	return DecryptedData.Num();

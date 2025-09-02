@@ -6,7 +6,7 @@ class FBSGuardPlatformFile::FBSGuardFileHandleRead : public IFileHandle
 public:
     FBSGuardFileHandleRead(IFileHandle* InHandle);
 
-    virtual ~FBSGuardFileHandleRead() {}
+    virtual ~FBSGuardFileHandleRead();
 
     // 读取接口：从解密后的数据缓冲读取
     virtual int64 Size() override;

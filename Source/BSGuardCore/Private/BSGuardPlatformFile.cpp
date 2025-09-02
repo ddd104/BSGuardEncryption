@@ -4,6 +4,9 @@
 #include "BSGuardFileHandleRead.h"
 #include "BSGuardFileHandleWrite.h"
 
+
+TArray<FAssetData> FBSGuardPlatformFile::Asset;
+
 FBSGuardPlatformFile::FBSGuardPlatformFile(): LowerLevel(nullptr)
 {}
 
@@ -16,7 +19,7 @@ IPlatformFile* FBSGuardPlatformFile::GetLowerLevel()
 }
 
 const TCHAR* FBSGuardPlatformFile::GetName() const
-{ return TEXT("GuardPlatformFile"); }
+{ return TEXT("BSGuardPlatformFile"); }
 
 bool FBSGuardPlatformFile::FileExists(const TCHAR* Filename)
 {
@@ -55,7 +58,6 @@ FFileStatData FBSGuardPlatformFile::GetStatData(const TCHAR* FilenameOrDirectory
 
 void FBSGuardPlatformFile::SetLowerLevel(IPlatformFile* NewLowerLevel)
 {
-	//return LowerLevel->SetLowerLevel(NewLowerLevel);
 	LowerLevel = NewLowerLevel;
 }
 
@@ -131,26 +133,18 @@ IFileHandle* FBSGuardPlatformFile::OpenRead(const TCHAR* Filename, bool bAllowWr
 		}
 		if (!FBSGuardCrypto::IsValidAction())
 		{
-			return nullptr;
+			return InnerHandle;
 		}
 		return new FBSGuardFileHandleRead(InnerHandle);
 	}
-	// 对于不拦截的文件，直接调用底层
 	return LowerLevel->OpenRead(Filename, bAllowWrite);
 }
 
 IFileHandle* FBSGuardPlatformFile::OpenWrite(const TCHAR* Filename, bool bAppend, bool bAllowRead)
 {
 	FString FilePath(Filename);
-	if (FBSGuardCrypto::ShouldEncryptAsset(FilePath))
+	if (IsEncryptedAssetFile2(FilePath))
 	{
-		if (!FBSGuardCrypto::HasValidKey())
-		{
-			// 如果没有密钥，不进行加密，直接写明文（也可以选择阻止写入以避免产生未加密文件，这里允许明文写以不中断工作流）
-			return LowerLevel->OpenWrite(Filename, bAppend, bAllowRead);
-		}
-		// 打开底层写句柄（写入临时缓存文件或内存）
-		// 我们将创建自定义句柄以在写入过程中加密数据
 		IFileHandle* InnerHandle = LowerLevel->OpenWrite(Filename, false, bAllowRead);
 		if (!InnerHandle)
 		{
@@ -158,10 +152,53 @@ IFileHandle* FBSGuardPlatformFile::OpenWrite(const TCHAR* Filename, bool bAppend
 		}
 		if (!FBSGuardCrypto::IsValidAction())
 		{
-			return nullptr;
+			return InnerHandle;
 		}
 		return new FBSGuardFileHandleWrite(InnerHandle);
 	}
-	// 非资产文件正常写
+	
 	return LowerLevel->OpenWrite(Filename, bAppend, bAllowRead);
+}
+
+IPlatformFile* FBSGuardPlatformFile::GetBottomPlatformFile()
+{
+	IPlatformFile* Top = &FPlatformFileManager::Get().GetPlatformFile();
+	IPlatformFile* Bottom = Top;
+	for (IPlatformFile* LL = Top->GetLowerLevel(); LL; LL = LL->GetLowerLevel())
+	{
+		Bottom = LL;
+		UE_LOG(LogTemp,Warning,TEXT("PF: %s"), LL->GetName());
+	}
+	UE_LOG(LogTemp,Warning,TEXT("Bottom PF: %s"), Bottom->GetName());
+	return Bottom;
+}
+
+static bool AreSameFilename(const FString& A, const FString& B, bool bIgnoreExtension = false)
+{
+	FString A1 = A, B1 = B;
+	A1.TrimStartAndEndInline();
+	B1.TrimStartAndEndInline();
+	
+	FPaths::NormalizeFilename(A1);
+	FPaths::NormalizeFilename(B1);
+
+	const FString NameA = bIgnoreExtension ? FPaths::GetBaseFilename(A1) : FPaths::GetCleanFilename(A1);
+	const FString NameB = bIgnoreExtension ? FPaths::GetBaseFilename(B1) : FPaths::GetCleanFilename(B1);
+	
+	return NameA.Equals(NameB, ESearchCase::IgnoreCase);
+}
+
+bool FBSGuardPlatformFile::IsEncryptedAssetFile2(FString FilePath)
+{
+	for (auto& AssetData : Asset)
+	{
+		UPackage* Package = AssetData.GetPackage();
+		const FString& PackageExt = FBSGuardCrypto::ChooseHeaderExt(AssetData);
+		const FString FileName =FPackageName::LongPackageNameToFilename(Package->GetName(), PackageExt);
+		if (AreSameFilename(FilePath, FileName, true))
+		{
+			return true;
+		}
+	}
+	return false;
 }

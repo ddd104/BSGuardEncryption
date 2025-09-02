@@ -1,12 +1,10 @@
 ﻿#include "AssetTypeActions_EncryptedAsset.h"
 
 #include "BSGuardCrypto.h"
-#include "BSGuardEditor.h"
-#include "Styling/SlateStyleRegistry.h"
 
 TSharedPtr<class SWidget> FAssetTypeActions_EncryptedAsset::GetThumbnailOverlay(const FAssetData& AssetData) const
 {
-	const FString& PackageExt = FBSGuardEditorModule::ChooseHeaderExt(AssetData);
+	const FString& PackageExt = FBSGuardCrypto::ChooseHeaderExt(AssetData);
 	FString AssetFilePath = FPackageName::LongPackageNameToFilename(AssetData.PackageName.ToString(), PackageExt);
 	/*if (FBSGuardCrypto::IsEncryptedAssetFile(AssetFilePath))
 	{
@@ -26,7 +24,7 @@ void FAssetTypeActions_EncryptedAsset::OpenAssetEditor(const TArray<UObject*>& I
 	TArray<UObject*> MakeOpenObjects;
 	for (UObject* Asset : InObjects)
 	{
-		const FString& PackageExt = FBSGuardEditorModule::ChooseHeaderExt(Asset);
+		const FString& PackageExt = FBSGuardCrypto::ChooseHeaderExt(Asset);
 		FString AssetPath = FPackageName::LongPackageNameToFilename(Asset->GetPackage()->GetName(), PackageExt);
         
 		FILE* File = nullptr;
@@ -269,7 +267,7 @@ void FAssetTypeActions_EncryptedAsset::OpenAssetEditor(const TArray<UObject*>& I
 	TArray<UObject*> MakeOpenObjects;
 	for (UObject* Asset : InObjects)
 	{
-		const FString& PackageExt = FBSGuardEditorModule::ChooseHeaderExt(Asset);
+		const FString& PackageExt = FBSGuardCrypto::ChooseHeaderExt(Asset);
 		FString AssetPath = FPackageName::LongPackageNameToFilename(Asset->GetPackage()->GetName(), PackageExt);
         
 		FILE* File = nullptr;

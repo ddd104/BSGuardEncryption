@@ -1,5 +1,6 @@
 ﻿#include "BSGuardCrypto.h"
 #include "BSCommonDefinition.h"
+#include "BSGuardPlatformFile.h"
 #include "BSLicenseUtils.h"
 
 
@@ -65,30 +66,30 @@ bool FBSGuardCrypto::EncryptFile(const FString& FilePath)
     TArray<uint8> PlainData;
     if (!FFileHelper::LoadFileToArray(PlainData, *FilePath))
     {
-        UE_LOG(LogTemp, Error, TEXT("Failed to read file for encryption: %s"), *FilePath);
+        UE_LOG(LogTemp, Error, TEXT("[%d]Failed to read file for encryption: %s"), __LINE__, *FilePath);
         return false;
     }
     // 执行加密
     TArray<uint8> EncryptedData;
     if (!Encrypt(PlainData, EncryptedData))
     {
-        UE_LOG(LogTemp, Error, TEXT("Encryption failed for file: %s"), *FilePath);
+        UE_LOG(LogTemp, Error, TEXT("[%d]Encryption failed for file: %s"), __LINE__, *FilePath);
         return false;
     }
     
     // 写入文件（覆盖原文件内容），直接使用底层平台文件以避免再次被加密
-    IPlatformFile& PlatFile = FPlatformFileManager::Get().GetPlatformFile();
-    IPlatformFile* RawFile = PlatFile.GetLowerLevel();
-    if (!RawFile)
-    {
-        RawFile = &PlatFile;
-    }
+    IPlatformFile* RawFile = FBSGuardPlatformFile::GetBottomPlatformFile();
 
-	RawFile->SetReadOnly(*FilePath, false);
-    TUniquePtr<IFileHandle> FileHandle(RawFile->OpenWrite(*FilePath, false));
-    if (!FileHandle || !FileHandle->Write(EncryptedData.GetData(), EncryptedData.Num()))
+	bool ret = RawFile->SetReadOnly(*FilePath, false);
+    TUniquePtr<IFileHandle> FileHandle(RawFile->OpenWrite(*FilePath, false, true));
+	if (!FileHandle )
+	{
+		UE_LOG(LogTemp, Error, TEXT("[%d]OpenWrite failed on bottom PF for: %s"), __LINE__, *FilePath);
+		return false;
+	}
+    if (!FileHandle->Write(EncryptedData.GetData(), EncryptedData.Num()))
     {
-        UE_LOG(LogTemp, Error, TEXT("Failed to write encrypted file: %s"), *FilePath);
+        UE_LOG(LogTemp, Error, TEXT("[%d]Failed to write encrypted file: %s"), __LINE__, *FilePath);
         return false;
     }
     FileHandle->Flush(true);
@@ -99,29 +100,29 @@ bool FBSGuardCrypto::DecryptFile(const FString& FilePath)
 {
     if (!bKeyIsSet)
     {
-        UE_LOG(LogTemp, Error, TEXT("Cannot decrypt file %s: Key not set."), *FilePath);
+        UE_LOG(LogTemp, Error, TEXT("[%d]Cannot decrypt file %s: Key not set."), __LINE__, *FilePath);
         return false;
     }
     // 读取加密文件数据
     TArray<uint8> FileData;
     if (!FFileHelper::LoadFileToArray(FileData, *FilePath))
     {
-        UE_LOG(LogTemp, Error, TEXT("Failed to read encrypted file: %s"), *FilePath);
+        UE_LOG(LogTemp, Error, TEXT("[%d]Failed to read encrypted file: %s"), __LINE__, *FilePath);
         return false;
     }
 	
     // 解密成功，写回明文文件数据，直接使用底层平台文件以避免被加密
-    IPlatformFile& PlatFile = FPlatformFileManager::Get().GetPlatformFile();
-    IPlatformFile* RawFile = PlatFile.GetLowerLevel();
-    if (!RawFile)
+	IPlatformFile* Raw = FBSGuardPlatformFile::GetBottomPlatformFile();
+	bool ret = Raw->SetReadOnly(*FilePath, false);
+	TUniquePtr<IFileHandle> FileHandle(Raw->OpenWrite(*FilePath, false, true));
+    if (!FileHandle )
     {
-        RawFile = &PlatFile;
+    	UE_LOG(LogTemp, Error, TEXT("[%d]OpenWrite failed on bottom PF for: %s"), __LINE__, *FilePath);
+    	return false;
     }
-	RawFile->SetReadOnly(*FilePath, false);
-    TUniquePtr<IFileHandle> FileHandle(RawFile->OpenWrite(*FilePath, false));
-    if (!FileHandle || !FileHandle->Write(FileData.GetData(), FileData.Num()))
+    if (!FileHandle->Write(FileData.GetData(), FileData.Num()))
     {
-        UE_LOG(LogTemp, Error, TEXT("Failed to write decrypted file: %s"), *FilePath);
+        UE_LOG(LogTemp, Error, TEXT("[%d]Failed to write decrypted file: %s"), __LINE__, *FilePath);
         return false;
     }
     FileHandle->Flush(true);
@@ -282,14 +283,35 @@ bool FBSGuardCrypto::ShouldEncryptAsset(const FString& FilePath)
 		return false;
 	}
 
-	bool bIsAssetFile = FilePath.EndsWith(TEXT(".uasset")) ||
-						FilePath.EndsWith(TEXT(".umap")) ||
-						FilePath.EndsWith(TEXT(".utasset")) || FilePath.EndsWith(TEXT(".utmap"));
+	bool bIsAssetFile = FilePath.EndsWith(TEXT(".uasset")) || FilePath.EndsWith(TEXT(".utasset"));
 	if (!bIsAssetFile)
 	{
 		return false;
 	}
 	return true;
+}
+
+const FString& FBSGuardCrypto::ChooseHeaderExt(const FAssetData& AD)
+{
+#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION == 27
+	const bool bIsWorld = (AD.AssetClass == UWorld::StaticClass()->GetFName());
+#elif ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 0
+	const bool bIsWorld = (AD.AssetClassPath == UWorld::StaticClass()->GetClassPathName());
+#endif
+	const bool bTextFormat = false;
+
+	if (bIsWorld)
+	{
+		return bTextFormat
+			? FPackageName::GetTextMapPackageExtension()   // ".utmap" :contentReference[oaicite:0]{index=0}
+			: FPackageName::GetMapPackageExtension();      // ".umap"  :contentReference[oaicite:1]{index=1}
+	}
+	else
+	{
+		return bTextFormat
+			? FPackageName::GetTextAssetPackageExtension() // ".utasset" :contentReference[oaicite:2]{index=2}
+			: FPackageName::GetAssetPackageExtension();    // ".uasset"  :contentReference[oaicite:3]{index=3}
+	}
 }
 
 
