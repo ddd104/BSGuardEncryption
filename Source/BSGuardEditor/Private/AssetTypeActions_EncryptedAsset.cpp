@@ -54,6 +54,9 @@ void FAssetTypeActions_EncryptedAsset::OpenAssetEditor(const TArray<UObject*>& I
 		}
 		if (IsOpenAllowed())
 		{
+			MakeOpenObjects.Add(Asset);
+		}else
+		{
 			IgnoreObjects.Add(Asset);
 		}
 	}
