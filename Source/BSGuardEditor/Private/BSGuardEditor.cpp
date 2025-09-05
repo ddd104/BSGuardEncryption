@@ -20,6 +20,7 @@
 #include "UObject/ObjectSaveContext.h"
 #elif ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 6
 #include "UObject/SavePackage.h"
+#include "UObject/ObjectSaveContext.h"
 #endif
 
 
@@ -265,7 +266,12 @@ void FBSGE_AssetActions::CreateAssetContextMenu(FMenuBuilder& MenuBuilder, const
 						BSGEncrypt::MarkPackagePlain(Package);
 						const FString& PackageExt = FBSGuardCrypto::ChooseHeaderExt(AssetData);
 						const FString FileName =FPackageName::LongPackageNameToFilename(Package->GetName(), PackageExt);
+#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION == 27
 						UPackage::SavePackage(Package, nullptr, RF_Standalone, *FileName, nullptr, nullptr, false, true, SAVE_NoError);
+#elif ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 0
+						FSavePackageArgs Args;
+						UPackage::SavePackage(Package, AssetData.GetAsset(), *FileName, Args);
+#endif
 						bool Ret = Package->MarkPackageDirty();
 						DecryptSelectedAsset(AssetData);
 					}
@@ -301,7 +307,12 @@ void FBSGE_AssetActions::CreateAssetContextMenu(FMenuBuilder& MenuBuilder, const
 						BSGEncrypt::MarkPackageEncrypted(Package);
 						const FString& PackageExt = FBSGuardCrypto::ChooseHeaderExt(AssetData);
 						const FString FileName =FPackageName::LongPackageNameToFilename(Package->GetName(), PackageExt);
+#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION == 27
 						UPackage::SavePackage(Package, nullptr, RF_Standalone, *FileName, nullptr, nullptr, false, true, SAVE_NoError);
+#elif ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 0
+						FSavePackageArgs Args;
+						UPackage::SavePackage(Package, AssetData.GetAsset(), *FileName, Args);
+#endif
 						bool Ret = Package->MarkPackageDirty();
 						EncryptSelectedAsset(AssetData);
 					}

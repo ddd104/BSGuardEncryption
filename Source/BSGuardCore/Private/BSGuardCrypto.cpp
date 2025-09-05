@@ -36,7 +36,7 @@ bool FBSGuardCrypto::IsEncryptedAssetFile(const FString& FilePath)
 
     if (!FPaths::FileExists(AbsolutePath))
     {
-        UE_LOG(LogTemp, Warning, TEXT("[IsEncryptedAssetFile] File does not exist：%s"), *AbsolutePath);
+    	//UE_LOG(LogTemp, Display, TEXT("%s, %d, File does not exist： %s"), ANSI_TO_TCHAR(__FUNCTION__), __LINE__, *AbsolutePath);
         return false;
     }
     
@@ -51,12 +51,15 @@ bool FBSGuardCrypto::IsEncryptedAssetFile(const FString& FilePath)
     TUniquePtr<IFileHandle> FileHandle(RawFile->OpenRead(*AbsolutePath));
     if (!FileHandle)
     {
+    	//UE_LOG(LogTemp, Display, TEXT("%s, %d, %s"), ANSI_TO_TCHAR(__FUNCTION__), __LINE__, *AbsolutePath);
         return false;
     }
     if (FileHandle->Read(Header, sizeof(Header)))
     {
+    	//UE_LOG(LogTemp, Display, TEXT("%s, %d, %s"), ANSI_TO_TCHAR(__FUNCTION__), __LINE__, *AbsolutePath);
         return FMemory::Memcmp(Header, BSGE::CryptoMagic, 4) == 0;
     }
+	//UE_LOG(LogTemp, Display, TEXT("%s, %d, %s"), ANSI_TO_TCHAR(__FUNCTION__), __LINE__, *AbsolutePath);
     return false;
 }
 
@@ -280,14 +283,17 @@ bool FBSGuardCrypto::ShouldEncryptAsset(const FString& FilePath)
 	if (AbsPath.StartsWith(EngineDir) || AbsPath.StartsWith(SavedDir))
 	{
 		// Skip engine content to avoid corrupting built-in assets
+		//UE_LOG(LogTemp, Display, TEXT("%s, %d, %s"), ANSI_TO_TCHAR(__FUNCTION__), __LINE__, *FilePath);
 		return false;
 	}
 
 	bool bIsAssetFile = FilePath.EndsWith(TEXT(".uasset")) || FilePath.EndsWith(TEXT(".utasset"));
 	if (!bIsAssetFile)
 	{
+		//UE_LOG(LogTemp, Display, TEXT("%s, %d, %s"), ANSI_TO_TCHAR(__FUNCTION__), __LINE__, *FilePath);
 		return false;
 	}
+	UE_LOG(LogTemp, Display, TEXT("%s, %d, %s"), ANSI_TO_TCHAR(__FUNCTION__), __LINE__, *FilePath);
 	return true;
 }
 

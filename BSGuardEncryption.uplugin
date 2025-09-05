@@ -18,7 +18,7 @@
 		{
 			"Name": "BSGuardCore",
 			"Type": "Editor",
-			"LoadingPhase": "PreLoadingScreen",
+			"LoadingPhase": "EarliestPossible",
 			"bCanBeUsedWithEditorCommandlets": true,
 			"PreloadDependencies": [ "AssetRegistry", "Core" ]
 		},

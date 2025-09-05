@@ -73,7 +73,6 @@ void FAssetTypeActions_EncryptedAsset::OpenAssetEditor(const TArray<UObject*>& I
 		FMessageDialog::Open(EAppMsgType::Ok, Msg);
 	}
 	
-	
 	Inner->OpenAssetEditor(MakeOpenObjects, Host);
 }
 
@@ -278,6 +277,7 @@ void FAssetTypeActions_EncryptedAsset::OpenAssetEditor(const TArray<UObject*>& I
 {
 	UE_LOG(LogTemp, Display, TEXT("FAssetTypeActions_EncryptedAsset::OpenAssetEditor"));
 	TArray<UObject*> MakeOpenObjects;
+	TArray<UObject*> IgnoreObjects;
 	for (UObject* Asset : InObjects)
 	{
 		const FString& PackageExt = FBSGuardCrypto::ChooseHeaderExt(Asset);
@@ -313,10 +313,26 @@ void FAssetTypeActions_EncryptedAsset::OpenAssetEditor(const TArray<UObject*>& I
 		}
 		if (IsOpenAllowed())
 		{
-			FMessageDialog::Open(EAppMsgType::Ok, FText::FromString("Failed to pass verification, refused to open this asset."));
 			MakeOpenObjects.Add(Asset);
+		}else
+		{
+			IgnoreObjects.Add(Asset);
 		}
 	}
+
+	if (IgnoreObjects.Num() > 0)
+	{
+		const FString Names = FString::JoinBy(IgnoreObjects, TEXT(",  "),
+	[](const UObject* Obj)
+		{
+			return Obj ? Obj->GetName() : FString(TEXT("<null>"));
+		});
+		const FText Msg = FText::Format( NSLOCTEXT("YourNS", "EncryptedAssets", "These assets are encrypted and cannot be opened: [{0}]"),
+			FText::FromString(Names));
+
+		FMessageDialog::Open(EAppMsgType::Ok, Msg);
+	}
+	
 	Inner->OpenAssetEditor(MakeOpenObjects, OpenedMethod, EditWithinLevelEditor);
 }
 #endif
