@@ -5,7 +5,7 @@
 #include "BSGuardFileHandleWrite.h"
 
 
-TArray<FAssetData> FBSGuardPlatformFile::Asset;
+TArray<FString> FBSGuardPlatformFile::RecordAssetFilePath;
 
 FBSGuardPlatformFile::FBSGuardPlatformFile(): LowerLevel(nullptr)
 {}
@@ -216,12 +216,9 @@ static bool AreSameFilename(const FString& A, const FString& B, bool bIgnoreExte
 
 bool FBSGuardPlatformFile::IsEncryptedAssetFile2(FString FilePath)
 {
-	for (auto& AssetData : Asset)
+	for (auto& AssetData : RecordAssetFilePath)
 	{
-		UPackage* Package = AssetData.GetPackage();
-		const FString& PackageExt = FBSGuardCrypto::ChooseHeaderExt(AssetData);
-		const FString FileName =FPackageName::LongPackageNameToFilename(Package->GetName(), PackageExt);
-		if (AreSameFilename(FilePath, FileName, true))
+		if (AreSameFilename(FilePath, AssetData, true))
 		{
 			return true;
 		}

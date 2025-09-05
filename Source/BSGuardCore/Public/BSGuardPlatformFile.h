@@ -70,5 +70,5 @@ private:
 	class FBSGuardFileHandleRead;
 	class FBSGuardFileHandleWrite;
 
-	BSGUARDCORE_API static TArray<FAssetData> Asset;
+	BSGUARDCORE_API static TArray<FString> RecordAssetFilePath;
 };

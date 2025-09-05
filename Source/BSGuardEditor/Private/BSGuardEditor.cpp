@@ -217,6 +217,7 @@ void FBSGE_AssetActions::CreateAssetContextMenu(FMenuBuilder& MenuBuilder, const
 	bool HasDecryptButton = false;
 	TArray<FAssetData> NeedEncryptionFiles;
 	TArray<FAssetData> NeedDecryptFiles;
+	FBSGuardPlatformFile::RecordAssetFilePath.Empty();
 	for (const FAssetData& AssetData : SelectedAssets)
 	{
 		FString AssetFilePath = AssetData.PackageName.ToString();
@@ -237,8 +238,7 @@ void FBSGE_AssetActions::CreateAssetContextMenu(FMenuBuilder& MenuBuilder, const
 			NeedEncryptionFiles.Add(AssetData);
 			HasEncryptionButton = true;
 		}
-		FBSGuardPlatformFile::Asset.Empty();
-		FBSGuardPlatformFile::Asset.Append(NeedDecryptFiles);
+		FBSGuardPlatformFile::RecordAssetFilePath.Emplace(AssetFilePath);
 	}
 	if (HasDecryptButton)
 	{
@@ -256,7 +256,7 @@ void FBSGE_AssetActions::CreateAssetContextMenu(FMenuBuilder& MenuBuilder, const
 			FUIAction(
 				FExecuteAction::CreateLambda([NeedDecryptFiles]()
 				{
-					FBSGuardPlatformFile::Asset.Empty();
+					FBSGuardPlatformFile::RecordAssetFilePath.Empty();
 					for (const FAssetData& AssetData : NeedDecryptFiles)
 					{
 						UE_LOG(LogTemp, Display, TEXT("[%d] [EncryptSelectedAsset] Start DecryptSelectedAsset %s"), __LINE__, *AssetData.PackageName.ToString());
