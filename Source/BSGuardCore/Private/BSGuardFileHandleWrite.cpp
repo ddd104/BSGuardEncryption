@@ -1,4 +1,15 @@
-﻿#include "BSGuardFileHandleWrite.h"
+﻿//=============================================================
+// Filename:       BSGuardEditor.h
+// Publisher:      BigStar
+// Creation Date:  2025-09-08
+// Last Modified:  2025-09-08
+// Version:        v1.0
+//
+// Description:
+// Implement the function of file handle write
+//=============================================================
+
+#include "BSGuardFileHandleWrite.h"
 #include "BSGuardCrypto.h"
 #include "BSLicenseUtils.h"
 

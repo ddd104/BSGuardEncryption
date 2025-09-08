@@ -1,4 +1,13 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+//=============================================================
+// Filename:       BSGuardEditor.h
+// Publisher:      BigStar
+// Creation Date:  2025-09-08
+// Last Modified:  2025-09-08
+// Version:        v1.0
+//
+// Description:
+// Implement asset operations in the editor
+//=============================================================
 
 #pragma once
 

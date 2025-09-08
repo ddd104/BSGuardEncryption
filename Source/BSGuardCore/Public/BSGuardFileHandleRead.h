@@ -1,4 +1,15 @@
-﻿#pragma once
+﻿//=============================================================
+// Filename:       BSGuardEditor.h
+// Publisher:      BigStar
+// Creation Date:  2025-09-08
+// Last Modified:  2025-09-08
+// Version:        v1.0
+//
+// Description:
+// Realize the Reading functions of encrypted assets
+//=============================================================
+
+#pragma once
 #include "BSGuardPlatformFile.h"
 
 class FBSGuardPlatformFile::FBSGuardFileHandleRead : public IFileHandle

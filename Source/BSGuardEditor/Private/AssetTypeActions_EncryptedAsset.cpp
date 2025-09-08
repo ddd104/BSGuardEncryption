@@ -1,4 +1,15 @@
-﻿#include "AssetTypeActions_EncryptedAsset.h"
+﻿//=============================================================
+// Filename:       BSGuardEditor.h
+// Publisher:      BigStar
+// Creation Date:  2025-09-08
+// Last Modified:  2025-09-08
+// Version:        v1.0
+//
+// Description:
+// Crypto assets Actions
+//=============================================================
+
+#include "AssetTypeActions_EncryptedAsset.h"
 
 #include "BSGuardCrypto.h"
 

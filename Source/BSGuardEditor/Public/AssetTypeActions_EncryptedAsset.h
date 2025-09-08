@@ -1,4 +1,15 @@
-﻿#pragma once
+﻿//=============================================================
+// Filename:       BSGuardEditor.h
+// Publisher:      BigStar
+// Creation Date:  2025-09-08
+// Last Modified:  2025-09-08
+// Version:        v1.0
+//
+// Description:
+// Crypto assets Actions
+//=============================================================
+
+#pragma once
 #include "AssetTypeActions_Base.h"
 
 class FAssetTypeActions_EncryptedAsset final: public FAssetTypeActions_Base

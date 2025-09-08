@@ -1,4 +1,13 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+﻿//=============================================================
+// Filename:       BSGuardEditor.h
+// Publisher:      BigStar
+// Creation Date:  2025-09-08
+// Last Modified:  2025-09-08
+// Version:        v1.0
+//
+// Description:
+// Implement license-related verification functions
+//=============================================================
 
 #pragma once
 

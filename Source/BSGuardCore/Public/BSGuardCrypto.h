@@ -1,4 +1,15 @@
-﻿#pragma once
+﻿//=============================================================
+// Filename:       BSGuardEditor.h
+// Publisher:      BigStar
+// Creation Date:  2025-09-08
+// Last Modified:  2025-09-08
+// Version:        v1.0
+//
+// Description:
+// Implement the encryption and decryption functions of assets
+//=============================================================
+
+#pragma once
 #include "CoreMinimal.h"
 #include "AssetRegistry/AssetData.h"
 #include "BSGuardCrypto.generated.h"

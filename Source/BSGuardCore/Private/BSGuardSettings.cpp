@@ -1,4 +1,13 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+﻿//=============================================================
+// Filename:       BSGuardEditor.h
+// Publisher:      BigStar
+// Creation Date:  2025-09-08
+// Last Modified:  2025-09-08
+// Version:        v1.0
+//
+// Description:
+// Implement the function of obtaining license-related data
+//=============================================================
 
 
 #include "BSGuardSettings.h"
@@ -16,7 +25,7 @@ static FString GetLicenseFilePath()
 	{
 		return FString();
 	}
-	return  FPaths::Combine(Plugin->GetBaseDir(), TEXT("license"), TEXT("License.bin"));
+	return  FPaths::Combine(Plugin->GetContentDir(), TEXT("Lib"),TEXT("site-packages"),TEXT("license"), TEXT("License.bin"));
 }
 
 static void DeriveKeyFromPublicKey(TArray<uint8>& OutKey)

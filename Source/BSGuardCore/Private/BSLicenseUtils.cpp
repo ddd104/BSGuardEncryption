@@ -1,4 +1,15 @@
-﻿#include "BSLicenseUtils.h"
+﻿//=============================================================
+// Filename:       BSGuardEditor.h
+// Publisher:      BigStar
+// Creation Date:  2025-09-08
+// Last Modified:  2025-09-08
+// Version:        v1.0
+//
+// Description:
+// Implement the function of obtaining license-related data
+//=============================================================
+
+#include "BSLicenseUtils.h"
 #include "BSCommonDefinition.h"
 #include "Interfaces/IPluginManager.h"
 #include "Serialization/MemoryReader.h"
@@ -20,7 +31,7 @@ FString FBSLicenseUtils::GetPublicKeyPem()
 	{
 		return FString();
 	}
-	FString KeyPath = FPaths::Combine(Plugin->GetBaseDir(), TEXT("license"), TEXT("root_public.pem"));
+	FString KeyPath = FPaths::Combine(Plugin->GetContentDir(), TEXT("Lib"),TEXT("site-packages"),TEXT("license"), TEXT("root_public.pem"));
 	FString Pem;
 	FFileHelper::LoadFileToString(Pem, *KeyPath);
 	return Pem;
@@ -83,8 +94,8 @@ TArray<uint8> FBSLicenseUtils::GetSharedKey()
     if (!Plugin.IsValid())
         return Empty;
 
-    FString EncPath = FPaths::Combine(Plugin->GetBaseDir(), TEXT("license"), TEXT("SharedKey.enc"));
-    FString PubPath = FPaths::Combine(Plugin->GetBaseDir(), TEXT("license"), TEXT("root_public.pem"));
+    FString EncPath = FPaths::Combine(Plugin->GetContentDir(), TEXT("Lib"),TEXT("site-packages"),TEXT("license"), TEXT("SharedKey.enc"));
+    FString PubPath = FPaths::Combine(Plugin->GetContentDir(), TEXT("Lib"),TEXT("site-packages"),TEXT("license"), TEXT("root_public.pem"));
 
     TArray<uint8> EncBytes;
     if (!FFileHelper::LoadFileToArray(EncBytes, *EncPath))

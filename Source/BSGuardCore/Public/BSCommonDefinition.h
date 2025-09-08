@@ -1,4 +1,15 @@
-﻿#pragma once
+﻿//=============================================================
+// Filename:       BSGuardEditor.h
+// Publisher:      BigStar
+// Creation Date:  2025-09-08
+// Last Modified:  2025-09-08
+// Version:        v1.0
+//
+// Description:
+// Public Definition
+//=============================================================
+
+#pragma once
 
 THIRD_PARTY_INCLUDES_START
 
@@ -23,21 +34,14 @@ THIRD_PARTY_INCLUDES_END
 namespace BSGE
 {
 	constexpr uint8  CryptoMagic[4]   = { 'B', 'S', 'G', 'E' };
-	constexpr uint8  CryptoVersion    = 0x01;          // 方便后续协议升级
-	constexpr int32  GcmNonceSize     = 12;            // 96 bit  GCM 标准
+	constexpr uint8  CryptoVersion    = 0x01;          // Facilitate subsequent protocol upgrades
+	constexpr int32  GcmNonceSize     = 12;            // 96-bit GCM standard
 	constexpr int32  GcmTagSize       = 16;            // 128 bit Auth Tag
 }
 
 
-DECLARE_LOG_CATEGORY_EXTERN(LogBSGE,    Log, All);     // Core 运行时 & 加解密
-DECLARE_LOG_CATEGORY_EXTERN(LogBSGEEd,  Log, All);     // Editor 扩展
-
-
-#ifndef UE_NEWER_THAN
-#define UE_NEWER_THAN(Major,Minor) \
-(ENGINE_MAJOR_VERSION >  (Major) || \
-(ENGINE_MAJOR_VERSION == (Major) && ENGINE_MINOR_VERSION >= (Minor)))
-#endif
+DECLARE_LOG_CATEGORY_EXTERN(LogBSGE,    Log, All);     // Core Runtime & Encryption
+DECLARE_LOG_CATEGORY_EXTERN(LogBSGEEd,  Log, All);     // Editor Extensions
 
 
 #if WITH_EDITOR
