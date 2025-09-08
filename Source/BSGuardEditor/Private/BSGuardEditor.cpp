@@ -232,6 +232,7 @@ void FBSGE_AssetActions::CreateAssetContextMenu(FMenuBuilder& MenuBuilder, const
 		if (FBSGuardCrypto::IsEncryptedAssetFile(AssetFilePath))
 		{
 			NeedDecryptFiles.Add(AssetData);
+			FBSGuardPlatformFile::RecordAssetFilePath.Emplace(AssetFilePath);
 			HasDecryptButton = true;
 		}
 		else
@@ -239,7 +240,6 @@ void FBSGE_AssetActions::CreateAssetContextMenu(FMenuBuilder& MenuBuilder, const
 			NeedEncryptionFiles.Add(AssetData);
 			HasEncryptionButton = true;
 		}
-		FBSGuardPlatformFile::RecordAssetFilePath.Emplace(AssetFilePath);
 	}
 	if (HasDecryptButton)
 	{
