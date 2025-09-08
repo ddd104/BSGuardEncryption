@@ -9,9 +9,7 @@
 	"CreatedByURL": "",
 	"DocsURL": "",
 	"EngineVersion": "4.27.2",
-	"PlatformAllowList": [
-		"Windows"
-	],
+	"PlatformAllowList": ["Windows"],
 	"MarketplaceURL": "com.epicgames.launcher://ue/Fab/product/ebca3db1-a5a1-4f19-8c72-f8b977c0c94a",
 	"SupportURL": "",
 	"CanContainContent": true,
