@@ -1,5 +1,5 @@
 ﻿//=============================================================
-// Filename:       BSGuardEditor.h
+// Filename:       BSLicenseUtils.h
 // Publisher:      BigStar
 // Creation Date:  2025-09-08
 // Last Modified:  2025-09-08
@@ -31,7 +31,7 @@ FString FBSLicenseUtils::GetPublicKeyPem()
 	{
 		return FString();
 	}
-	FString KeyPath = FPaths::Combine(Plugin->GetContentDir(), TEXT("Lib"),TEXT("site-packages"),TEXT("license"), TEXT("root_public.pem"));
+	FString KeyPath = FPaths::Combine(GetPythonPath(),TEXT("license"), TEXT("root_public.pem"));
 	FString Pem;
 	FFileHelper::LoadFileToString(Pem, *KeyPath);
 	return Pem;
@@ -94,8 +94,8 @@ TArray<uint8> FBSLicenseUtils::GetSharedKey()
     if (!Plugin.IsValid())
         return Empty;
 
-    FString EncPath = FPaths::Combine(Plugin->GetContentDir(), TEXT("Lib"),TEXT("site-packages"),TEXT("license"), TEXT("SharedKey.enc"));
-    FString PubPath = FPaths::Combine(Plugin->GetContentDir(), TEXT("Lib"),TEXT("site-packages"),TEXT("license"), TEXT("root_public.pem"));
+    FString EncPath = FPaths::Combine(GetPythonPath(),TEXT("license"), TEXT("SharedKey.enc"));
+    FString PubPath = FPaths::Combine(GetPythonPath(),TEXT("license"), TEXT("root_public.pem"));
 
     TArray<uint8> EncBytes;
     if (!FFileHelper::LoadFileToArray(EncBytes, *EncPath))
@@ -190,6 +190,18 @@ TArray<uint8> FBSLicenseUtils::GetSharedKey()
 #else
     return Empty;
 #endif
+}
+
+FString FBSLicenseUtils::GetPythonPath()
+{
+	FString EncPath = TEXT("");
+	TSharedPtr<IPlugin> Plugin = IPluginManager::Get().FindPlugin(TEXT("BSGuardEncryption"));
+	if (!Plugin.IsValid())
+	{
+		return EncPath;
+	}
+	EncPath = FPaths::Combine(Plugin->GetContentDir(), TEXT("Python"), TEXT("Lib"),TEXT("site-packages"));
+	return EncPath;
 }
 
 #if WITH_OPENSSL

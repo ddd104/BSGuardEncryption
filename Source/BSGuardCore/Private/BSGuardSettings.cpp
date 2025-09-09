@@ -1,5 +1,5 @@
 ﻿//=============================================================
-// Filename:       BSGuardEditor.h
+// Filename:       BSGuardSettings.h
 // Publisher:      BigStar
 // Creation Date:  2025-09-08
 // Last Modified:  2025-09-08
@@ -20,12 +20,7 @@
 
 static FString GetLicenseFilePath()
 {
-	TSharedPtr<IPlugin> Plugin = IPluginManager::Get().FindPlugin(TEXT("BSGuardEncryption"));
-	if (!Plugin.IsValid())
-	{
-		return FString();
-	}
-	return  FPaths::Combine(Plugin->GetContentDir(), TEXT("Lib"),TEXT("site-packages"),TEXT("license"), TEXT("License.bin"));
+	return  FPaths::Combine(FBSLicenseUtils::GetPythonPath(), TEXT("license"), TEXT("License.bin"));
 }
 
 static void DeriveKeyFromPublicKey(TArray<uint8>& OutKey)

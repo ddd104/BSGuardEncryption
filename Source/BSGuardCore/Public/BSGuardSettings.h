@@ -1,5 +1,5 @@
 ﻿//=============================================================
-// Filename:       BSGuardEditor.h
+// Filename:       BSGuardSettings.h
 // Publisher:      BigStar
 // Creation Date:  2025-09-08
 // Last Modified:  2025-09-08

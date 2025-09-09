@@ -1,5 +1,5 @@
 ﻿//=============================================================
-// Filename:       BSGuardEditor.h
+// Filename:       AssetTypeActions_EncryptedAsset.h
 // Publisher:      BigStar
 // Creation Date:  2025-09-08
 // Last Modified:  2025-09-08

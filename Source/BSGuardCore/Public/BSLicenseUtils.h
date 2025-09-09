@@ -1,5 +1,5 @@
 ﻿//=============================================================
-// Filename:       BSGuardEditor.h
+// Filename:       BSLicenseUtils.h
 // Publisher:      BigStar
 // Creation Date:  2025-09-08
 // Last Modified:  2025-09-08
@@ -31,4 +31,6 @@ public:
 	static TArray<uint8> GetSharedKey();
 
 	static TArray<uint8> SharedKey;
+
+	static FString GetPythonPath();
 };
