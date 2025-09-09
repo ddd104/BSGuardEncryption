@@ -12,6 +12,7 @@
 	"MarketplaceURL": "com.epicgames.launcher://ue/Fab/product/ebca3db1-a5a1-4f19-8c72-f8b977c0c94a",
 	"SupportURL": "",
 	"CanContainContent": true,
+	"SupportedTargetPlatforms": [ "Win64" ],
 	"IsBetaVersion": false,
 	"IsExperimentalVersion": false,
 	"Installed": true,
@@ -22,13 +23,17 @@
 			"LoadingPhase": "PostConfigInit",
 			"bCanBeUsedWithEditorCommandlets": true,
 			"PreloadDependencies": [ "AssetRegistry", "Core" ],
-			"PlatformAllowList": ["Windows"]
+			"PlatformAllowList": ["Windows"],
+			"PlatformAllowList": [ "Win64" ],
+			"TargetAllowList": [ "Editor" ]
 		},
 		{
 			"Name": "BSGuardEditor",
 			"Type": "Editor",
 			"LoadingPhase": "PostEngineInit",
-			"PlatformAllowList": ["Windows"]
+			"PlatformAllowList": ["Windows"],
+			"PlatformAllowList": [ "Win64" ],
+			"TargetAllowList": [ "Editor" ]
 		}
 	]
 }
