@@ -1,13 +1,4 @@
-//=============================================================
-// Filename:       BSGuardCore.h
-// Publisher:      BigStar
-// Creation Date:  2025-09-08
-// Last Modified:  2025-09-08
-// Version:        v1.0
-//
-// Description:
-// Overwrite the old PlatformFile with BSGuardPlatformFile
-//=============================================================
+// Copyright (c) 2025 BigStar. All Rights Reserved.
 
 #include "BSGuardCore.h"
 

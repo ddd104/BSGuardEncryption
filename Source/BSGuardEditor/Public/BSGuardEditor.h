@@ -1,13 +1,4 @@
-//=============================================================
-// Filename:       BSGuardEditor.h
-// Publisher:      BigStar
-// Creation Date:  2025-09-08
-// Last Modified:  2025-09-08
-// Version:        v1.0
-//
-// Description:
-// Implement asset operations in the editor
-//=============================================================
+// Copyright (c) 2025 BigStar. All Rights Reserved.
 
 #pragma once
 
