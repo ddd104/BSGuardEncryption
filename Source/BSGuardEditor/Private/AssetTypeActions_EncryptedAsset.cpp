@@ -3,6 +3,7 @@
 #include "AssetTypeActions_EncryptedAsset.h"
 
 #include "BSGuardCrypto.h"
+#include "ThumbnailRendering/SceneThumbnailInfoWithPrimitive.h"
 
 TSharedPtr<class SWidget> FAssetTypeActions_EncryptedAsset::GetThumbnailOverlay(const FAssetData& AssetData) const
 {
@@ -137,13 +138,41 @@ void FAssetTypeActions_EncryptedAsset::PerformAssetDiff(UObject* OldAsset, UObje
 
 UThumbnailInfo* FAssetTypeActions_EncryptedAsset::GetThumbnailInfo(UObject* Asset) const
 {
-	return Inner->GetThumbnailInfo(Asset);
-}
+	UThumbnailInfo* Info = Inner.ToSharedPtr() ? Inner->GetThumbnailInfo(Asset) : nullptr;
+	
+	if (!Info)
+	{
+		Info = NewObject<USceneThumbnailInfoWithPrimitive>(Asset);
+	}
+	if (USceneThumbnailInfoWithPrimitive* SceneInfo = Cast<USceneThumbnailInfoWithPrimitive>(Info))
+	{
+		if (!SceneInfo->DefaultPrimitiveType.IsSet())
+		{
+			SceneInfo->DefaultPrimitiveType = EThumbnailPrimType::TPT_Sphere;
+		}
+		// SceneInfo->OrbitPitch = -15.f;
+		// SceneInfo->OrbitYaw   = 135.f;
+		// SceneInfo->OrbitZoom  = 0.f;
+	}
+	else
+	{
+		USceneThumbnailInfoWithPrimitive* NewInfo =
+			NewObject<USceneThumbnailInfoWithPrimitive>(Asset);
+		NewInfo->DefaultPrimitiveType = EThumbnailPrimType::TPT_Sphere;
+		Info = NewInfo;
+	}
 
+	return Info;
+}
+#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 2
+#elif
 EThumbnailPrimType FAssetTypeActions_EncryptedAsset::GetDefaultThumbnailPrimitiveType(UObject* Asset) const
 {
 	return Inner->GetDefaultThumbnailPrimitiveType(Asset);
 }
+#endif
+
+
 
 FText FAssetTypeActions_EncryptedAsset::GetAssetDescription(const FAssetData& AssetData) const
 {

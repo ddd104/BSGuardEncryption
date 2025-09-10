@@ -25,7 +25,13 @@ public:
 	virtual void PerformAssetDiff(UObject* OldAsset, UObject* NewAsset, const FRevisionInfo& OldRevision,
 	                              const FRevisionInfo& NewRevision) const override;
 	virtual UThumbnailInfo* GetThumbnailInfo(UObject* Asset) const override;
+#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 2
+	
+#else
 	virtual EThumbnailPrimType GetDefaultThumbnailPrimitiveType(UObject* Asset) const override;
+#endif
+	
+	
 	virtual TSharedPtr<class SWidget> GetThumbnailOverlay(const FAssetData& AssetData) const override;
 	virtual FText GetAssetDescription(const FAssetData& AssetData) const override;
 	virtual bool IsImportedAsset() const override;
