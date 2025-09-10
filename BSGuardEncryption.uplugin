@@ -10,6 +10,7 @@
 	"DocsURL": "https://docs.google.com/document/d/17yBYUERkDf9Jg2erj41048eqYblfbcRf/edit?usp=drive_link&ouid=116061658203996013711&rtpof=true&sd=true",
 	"EngineVersion": "5.6.0",
 	"MarketplaceURL": "com.epicgames.launcher://ue/Fab/product/ebca3db1-a5a1-4f19-8c72-f8b977c0c94a",
+	"FabURL": "com.epicgames.launcher://ue/Fab/product/fb19a365-9b5e-4432-b5a8-c10e450e607d",
 	"SupportURL": "",
 	"SupportedTargetPlatforms": [ "Win64" ],
 	"CanContainContent": true,
