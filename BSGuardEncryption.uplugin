@@ -8,7 +8,7 @@
 	"CreatedBy": "BigStar",
 	"CreatedByURL": "",
 	"DocsURL": "",
-	"EngineVersion": "4.27.2",
+	"EngineVersion": "4.27.0",
 	"MarketplaceURL": "com.epicgames.launcher://ue/Fab/product/ebca3db1-a5a1-4f19-8c72-f8b977c0c94a",
 	"SupportURL": "",
 	"CanContainContent": true,
@@ -19,11 +19,10 @@
 	"Modules": [
 		{
 			"Name": "BSGuardCore",
-			"Type": "Developer",
+			"Type": "DeveloperTool",
 			"LoadingPhase": "PostConfigInit",
 			"bCanBeUsedWithEditorCommandlets": true,
 			"PreloadDependencies": [ "AssetRegistry", "Core" ],
-			"PlatformAllowList": ["Windows"],
 			"PlatformAllowList": [ "Win64" ],
 			"TargetAllowList": [ "Editor" ]
 		},
@@ -31,7 +30,6 @@
 			"Name": "BSGuardEditor",
 			"Type": "Editor",
 			"LoadingPhase": "PostEngineInit",
-			"PlatformAllowList": ["Windows"],
 			"PlatformAllowList": [ "Win64" ],
 			"TargetAllowList": [ "Editor" ]
 		}
