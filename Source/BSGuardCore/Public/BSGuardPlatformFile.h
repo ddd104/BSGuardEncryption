@@ -2,6 +2,7 @@
 
 #pragma once
 #include "HAL/PlatformFile.h"
+#include "BSCommonDefinition.h"
 #include "HAL/PlatformFilemanager.h"
 
 /**

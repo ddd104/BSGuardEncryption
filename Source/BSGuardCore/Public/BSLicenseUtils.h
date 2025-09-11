@@ -2,7 +2,7 @@
 
 #pragma once
 #include "CoreMinimal.h"
-
+#include "BSCommonDefinition.h"
 struct FBSLicenseData
 {
 	FString AssetPack;

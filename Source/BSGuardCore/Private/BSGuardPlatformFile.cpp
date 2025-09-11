@@ -1,10 +1,12 @@
 ﻿// Copyright (c) 2025 BigStar. All Rights Reserved.
 
 #include "BSGuardPlatformFile.h"
-
 #include "BSGuardCrypto.h"
 #include "BSGuardFileHandleRead.h"
 #include "BSGuardFileHandleWrite.h"
+#include "Misc/CommandLine.h"
+#include "Misc/Paths.h"
+
 
 
 TArray<FString> FBSGuardPlatformFile::RecordAssetFilePath;

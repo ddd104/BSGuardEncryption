@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "BSCommonDefinition.h"
 #include "UObject/Object.h"
 
 /**

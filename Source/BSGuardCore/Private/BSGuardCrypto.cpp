@@ -4,7 +4,9 @@
 #include "BSCommonDefinition.h"
 #include "BSGuardPlatformFile.h"
 #include "BSLicenseUtils.h"
-
+#include "Misc/PackageName.h"
+#include "UObject/Package.h"
+#include "Engine/World.h"
 
 uint8 FBSGuardCrypto::Key[32];
 bool FBSGuardCrypto::bKeyIsSet = false;
