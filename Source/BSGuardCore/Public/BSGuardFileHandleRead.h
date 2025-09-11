@@ -2,7 +2,7 @@
 
 #pragma once
 #include "BSGuardPlatformFile.h"
-
+#include "BSCommonDefinition.h"
 class FBSGuardPlatformFile::FBSGuardFileHandleRead : public IFileHandle
 {
 public:
@@ -27,7 +27,7 @@ public:
     virtual bool Truncate(int64 NewSize) override { return false; }
 #if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION == 27
     
-#else ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 0
+#elif  ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 0
     virtual bool ReadAt(uint8* Destination, int64 BytesToRead, int64 Offset) override;
 #endif
 

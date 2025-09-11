@@ -5,7 +5,7 @@
 #include "BSGuardCrypto.h"
 #include "BSGuardPlatformFile.h"
 #include "BSGuardSettings.h"
-
+#include "HAL/PlatformFileManager.h"
 #define LOCTEXT_NAMESPACE "FBSGuardCoreModule"
 
 

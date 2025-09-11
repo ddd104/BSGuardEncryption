@@ -7,6 +7,11 @@
 #include "Misc/DateTime.h"
 #include "Misc/Timespan.h"
 #include "Misc/Base64.h"
+#include "Misc/DateTime.h"
+#include "Misc/Timespan.h"
+#include "Misc/Base64.h"
+#include "Misc/Paths.h"         // ★ FPaths
+#include "Misc/SecureHash.h"    // ★ FSHA256
 #include "BSCommonDefinition.h"
 
 static FString GetLicenseFilePath()

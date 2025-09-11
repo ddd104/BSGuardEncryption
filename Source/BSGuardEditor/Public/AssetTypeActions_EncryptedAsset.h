@@ -1,7 +1,14 @@
 ﻿// Copyright (c) 2025 BigStar. All Rights Reserved.
 
 #pragma once
+#include "Launch/Resources/Version.h"
+#include "Misc/PackageName.h"
+#include "Misc/MessageDialog.h"
+#include "UObject/Package.h"
+#include "Misc/Paths.h"
+#include "HAL/PlatformFile.h"
 #include "AssetTypeActions_Base.h"
+
 
 class FAssetTypeActions_EncryptedAsset final: public FAssetTypeActions_Base
 {
