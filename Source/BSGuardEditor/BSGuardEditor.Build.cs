@@ -20,17 +20,26 @@ public class BSGuardEditor : ModuleRules
 				"Slate",
 				"SlateCore",
 				"EditorStyle", 
-				"UnrealEd",    // 编辑器样式和UnrealEd功能
+				"UnrealEd",
 				"ContentBrowser", 
 				"AssetTools",
 				"Projects", 
-				"InputCore",      // 可能用到输入/图标
+				"InputCore",
 				"BSGuardCore",
+				"AssetRegistry",
+				"ToolMenus"
+				//////////
+
 			}
 			);
 		/*string EnginePath = Path.GetFullPath(Target.RelativeEnginePath);
 		PrivateIncludePaths.AddRange(new[] {
 			Path.Combine(EnginePath, "Source", "Editor", "ContentBrowser", "Private")
 		});*/
+		if (Target.Platform == UnrealTargetPlatform.Win64)
+		{
+			AddEngineThirdPartyPrivateStaticDependencies(Target, "OpenSSL");
+			PublicDefinitions.Add("WITH_OPENSSL=1");
+		}
 	}
 }

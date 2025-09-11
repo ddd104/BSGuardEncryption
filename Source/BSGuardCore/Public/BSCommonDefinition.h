@@ -2,6 +2,14 @@
 
 #pragma once
 
+#include "CoreMinimal.h"
+#include "Engine/AssetUserData.h"
+#include "Interfaces/Interface_AssetUserData.h"
+#include "Misc/Paths.h"
+#include "Misc/FileHelper.h"
+#include "Misc/CommandLine.h"
+#include "Launch/Resources/Version.h"
+
 THIRD_PARTY_INCLUDES_START
 
 #define UI UI_ST

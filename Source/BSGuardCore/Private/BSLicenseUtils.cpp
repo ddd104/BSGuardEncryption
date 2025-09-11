@@ -6,6 +6,7 @@
 #include "Serialization/MemoryReader.h"
 #include "Misc/FileHelper.h"
 #include "Misc/Base64.h"
+#include "Misc/Paths.h"
 #if WITH_OPENSSL
 #include <openssl/pem.h>
 #include <openssl/evp.h>

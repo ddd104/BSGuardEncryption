@@ -3,6 +3,7 @@
 #pragma once
 #include "CoreMinimal.h"
 #include "AssetRegistry/AssetData.h"
+#include "BSCommonDefinition.h"
 #include "BSGuardCrypto.generated.h"
 
 

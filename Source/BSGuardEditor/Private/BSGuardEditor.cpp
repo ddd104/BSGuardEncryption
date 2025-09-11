@@ -1,7 +1,7 @@
 // Copyright (c) 2025 BigStar. All Rights Reserved.
 
 #include "BSGuardEditor.h"
-
+#include "Launch/Resources/Version.h" 
 #include "AssetToolsModule.h"
 #include "AssetTypeActions_EncryptedAsset.h"
 #include "ContentBrowserModule.h"
@@ -15,13 +15,17 @@
 #include "Misc/MessageDialog.h"
 #include "UObject/Package.h"
 #if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION == 27
-
+#include "EditorStyleSet.h"
 #elif ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 0 && ENGINE_MINOR_VERSION < 6
 #include "UObject/ObjectSaveContext.h"
+#include "Styling/AppStyle.h"
 #elif ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 6
 #include "UObject/SavePackage.h"
 #include "UObject/ObjectSaveContext.h"
+#include "Styling/AppStyle.h"
 #endif
+
+
 
 
 #define LOCTEXT_NAMESPACE "FBSGuardEditorModule"

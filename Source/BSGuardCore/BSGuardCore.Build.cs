@@ -35,10 +35,15 @@ public class BSGuardCore : ModuleRules
 				"Engine",
 				"Projects",
 				// ... add private dependencies that you statically link with here ...	
+				"ApplicationCore",
+				"Projects",
+				"AssetRegistry",
+				"Slate",
+				"SlateCore",
 			}
 			);
 		
-		if (Target.Platform == UnrealTargetPlatform.Win64 || Target.Platform == UnrealTargetPlatform.Linux || Target.Platform == UnrealTargetPlatform.Mac)
+		if (Target.Platform == UnrealTargetPlatform.Win64)
 		{
 			AddEngineThirdPartyPrivateStaticDependencies(Target, "OpenSSL");
 			PublicDefinitions.Add("WITH_OPENSSL=1");
