@@ -192,7 +192,7 @@ FString FBSLicenseUtils::GetPythonPath()
 	{
 		return EncPath;
 	}
-	EncPath = FPaths::Combine(Plugin->GetContentDir(), TEXT("Python"), TEXT("Lib"),TEXT("site-packages"));
+	EncPath = FPaths::Combine(Plugin->GetContentDir(), TEXT("Python"));
 	return EncPath;
 }
 
